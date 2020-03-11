@@ -94,7 +94,7 @@ different from the best choice for another use case. It therefore seems likely t
 relational databases will continue to be used alongside a broad variety of nonrelational datastores—an idea that is 
 sometimes called polyglot persistence [3].
 
-The Object-Relational Mismatch
+### The Object-Relational Mismatch
 Most application development today is done in object-oriented programming languages, which leads to a common criticism
 of the SQL data model: if data is stored in relational tables, an awkward translation layer is required between the
 objects in the application code and the database model of tables, rows, and columns. The disconnect between the models 
@@ -166,7 +166,7 @@ information imply a tree structure in the data, and the JSON representation make
 
 ddia 0202
 Figure 2-2. One-to-many relationships forming a tree structure.
-Many-to-One and Many-to-Many Relationships
+### Many-to-One and Many-to-Many Relationships
 In Example 2-1 in the preceding section, region_id and industry_id are given as IDs, not as plain-text strings 
 "Greater Seattle Area" and "Philanthropy". Why?
 
@@ -195,138 +195,269 @@ write overheads, and risks inconsistencies (where some copies of the information
 Removing such duplication is the key idea behind normalization in databases.ii
 
 NOTE
-Database administrators and developers love to argue about normalization and denormalization, but we will suspend judgment for now. In Part III of this book we will return to this topic and explore systematic ways of dealing with caching, denormalization, and derived data.
+Database administrators and developers love to argue about normalization and denormalization, but we will suspend
+judgment for now. In Part III of this book we will return to this topic and explore systematic ways of dealing with 
+caching, denormalization, and derived data.
 
-Unfortunately, normalizing this data requires many-to-one relationships (many people live in one particular region, many people work in one particular industry), which don’t fit nicely into the document model. In relational databases, it’s normal to refer to rows in other tables by ID, because joins are easy. In document databases, joins are not needed for one-to-many tree structures, and support for joins is often weak.iii
+Unfortunately, normalizing this data requires many-to-one relationships (many people live in one particular region, 
+many people work in one particular industry), which don’t fit nicely into the document model. In relational databases, 
+it’s normal to refer to rows in other tables by ID, because joins are easy. In document databases, joins are not 
+needed for one-to-many tree structures, and support for joins is often weak.iii
 
-If the database itself does not support joins, you have to emulate a join in application code by making multiple queries to the database. (In this case, the lists of regions and industries are probably small and slow-changing enough that the application can simply keep them in memory. But nevertheless, the work of making the join is shifted from the database to the application code.)
+If the database itself does not support joins, you have to emulate a join in application code by making multiple 
+queries to the database. (In this case, the lists of regions and industries are probably small and slow-changing enough 
+that the application can simply keep them in memory. But nevertheless, the work of making the join is shifted from 
+the database to the application code.)
 
-Moreover, even if the initial version of an application fits well in a join-free document model, data has a tendency of becoming more interconnected as features are added to applications. For example, consider some changes we could make to the résumé example:
+Moreover, even if the initial version of an application fits well in a join-free document model, data has a tendency 
+of becoming more interconnected as features are added to applications. For example, consider some changes we could 
+make to the résumé example:
 
-Organizations and schools as entities
-In the previous description, organization (the company where the user worked) and school_name (where they studied) are just strings. Perhaps they should be references to entities instead? Then each organization, school, or university could have its own web page (with logo, news feed, etc.); each résumé could link to the organizations and schools that it mentions, and include their logos and other information (see Figure 2-3 for an example from LinkedIn).
+#### Organizations and schools as entities
+In the previous description, organization (the company where the user worked) and school_name (where they studied) 
+are just strings. Perhaps they should be references to entities instead? Then each organization, school, or university 
+could have its own web page (with logo, news feed, etc.); each résumé could link to the organizations and schools 
+that it mentions, and include their logos and other information (see Figure 2-3 for an example from LinkedIn).
 
-Recommendations
-Say you want to add a new feature: one user can write a recommendation for another user. The recommendation is shown on the résumé of the user who was recommended, together with the name and photo of the user making the recommendation. If the recommender updates their photo, any recommendations they have written need to reflect the new photo. Therefore, the recommendation should have a reference to the author’s profile.
+#### Recommendations
+Say you want to add a new feature: one user can write a recommendation for another user. The recommendation is shown 
+on the résumé of the user who was recommended, together with the name and photo of the user making the recommendation. 
+If the recommender updates their photo, any recommendations they have written need to reflect the new photo. 
+Therefore, the recommendation should have a reference to the author’s profile.
 
 ddia 0203
 Figure 2-3. The company name is not just a string, but a link to a company entity. Screenshot of linkedin.com.
-Figure 2-4 illustrates how these new features require many-to-many relationships. The data within each dotted rectangle can be grouped into one document, but the references to organizations, schools, and other users need to be represented as references, and require joins when queried.
+Figure 2-4 illustrates how these new features require many-to-many relationships. The data within each dotted rectangle
+can be grouped into one document, but the references to organizations, schools, and other users need to be represented 
+as references, and require joins when queried.
 
 ddia 0204
 Figure 2-4. Extending résumés with many-to-many relationships.
 
-Are Document Databases Repeating History?
-While many-to-many relationships and joins are routinely used in relational databases, document databases and NoSQL reopened the debate on how best to represent such relationships in a database. This debate is much older than NoSQL—in fact, it goes back to the very earliest computerized database systems.
+### Are Document Databases Repeating History?
+While many-to-many relationships and joins are routinely used in relational databases, document databases and NoSQL 
+reopened the debate on how best to represent such relationships in a database. This debate is much older than 
+NoSQL—in fact, it goes back to the very earliest computerized database systems.
 
-The most popular database for business data processing in the 1970s was IBM’s Information Management System (IMS), originally developed for stock-keeping in the Apollo space program and first commercially released in 1968 [13]. It is still in use and maintained today, running on OS/390 on IBM mainframes [14].
+The most popular database for business data processing in the 1970s was IBM’s Information Management System (IMS), 
+originally developed for stock-keeping in the Apollo space program and first commercially released in 1968 [13]. 
+It is still in use and maintained today, running on OS/390 on IBM mainframes [14].
 
-The design of IMS used a fairly simple data model called the hierarchical model, which has some remarkable similarities to the JSON model used by document databases [2]. It represented all data as a tree of records nested within records, much like the JSON structure of Figure 2-2.
+The design of IMS used a fairly simple data model called the hierarchical model, which has some remarkable similarities 
+to the JSON model used by document databases [2]. It represented all data as a tree of records nested within records, 
+much like the JSON structure of Figure 2-2.
 
-Like document databases, IMS worked well for one-to-many relationships, but it made many-to-many relationships difficult, and it didn’t support joins. Developers had to decide whether to duplicate (denormalize) data or to manually resolve references from one record to another. These problems of the 1960s and ’70s were very much like the problems that developers are running into with document databases today [15].
+Like document databases, IMS worked well for one-to-many relationships, but it made many-to-many relationships 
+difficult, and it didn’t support joins. Developers had to decide whether to duplicate (denormalize) data or to manually 
+resolve references from one record to another. These problems of the 1960s and ’70s were very much like the problems 
+that developers are running into with document databases today [15].
 
-Various solutions were proposed to solve the limitations of the hierarchical model. The two most prominent were the relational model (which became SQL, and took over the world) and the network model (which initially had a large following but eventually faded into obscurity). The “great debate” between these two camps lasted for much of the 1970s [2].
+Various solutions were proposed to solve the limitations of the hierarchical model. The two most prominent were the 
+relational model (which became SQL, and took over the world) and the network model (which initially had a large 
+following but eventually faded into obscurity). The “great debate” between these two camps lasted for much of 
+the 1970s [2].
 
-Since the problem that the two models were solving is still so relevant today, it’s worth briefly revisiting this debate in today’s light.
+Since the problem that the two models were solving is still so relevant today, it’s worth briefly revisiting this 
+debate in today’s light.
 
-THE NETWORK MODEL
-The network model was standardized by a committee called the Conference on Data Systems Languages (CODASYL) and implemented by several different database vendors; it is also known as the CODASYL model [16].
+### THE NETWORK MODEL
+The network model was standardized by a committee called the Conference on Data Systems Languages (CODASYL) and 
+implemented by several different database vendors; it is also known as the CODASYL model [16].
 
-The CODASYL model was a generalization of the hierarchical model. In the tree structure of the hierarchical model, every record has exactly one parent; in the network model, a record could have multiple parents. For example, there could be one record for the "Greater Seattle Area" region, and every user who lived in that region could be linked to it. This allowed many-to-one and many-to-many relationships to be modeled.
+The CODASYL model was a generalization of the hierarchical model. In the tree structure of the hierarchical model, 
+every record has exactly one parent; in the network model, a record could have multiple parents. For example, there 
+could be one record for the "Greater Seattle Area" region, and every user who lived in that region could be linked to 
+it. This allowed many-to-one and many-to-many relationships to be modeled.
 
-The links between records in the network model were not foreign keys, but more like pointers in a programming language (while still being stored on disk). The only way of accessing a record was to follow a path from a root record along these chains of links. This was called an access path.
+The links between records in the network model were not foreign keys, but more like pointers in a programming 
+language (while still being stored on disk). The only way of accessing a record was to follow a path from a root record 
+along these chains of links. This was called an access path.
 
-In the simplest case, an access path could be like the traversal of a linked list: start at the head of the list, and look at one record at a time until you find the one you want. But in a world of many-to-many relationships, several different paths can lead to the same record, and a programmer working with the network model had to keep track of these different access paths in their head.
+In the simplest case, an access path could be like the traversal of a linked list: start at the head of the list, and 
+look at one record at a time until you find the one you want. But in a world of many-to-many relationships, several 
+different paths can lead to the same record, and a programmer working with the network model had to keep track of 
+these different access paths in their head.
 
-A query in CODASYL was performed by moving a cursor through the database by iterating over lists of records and following access paths. If a record had multiple parents (i.e., multiple incoming pointers from other records), the application code had to keep track of all the various relationships. Even CODASYL committee members admitted that this was like navigating around an n-dimensional data space [17].
+A query in CODASYL was performed by moving a cursor through the database by iterating over lists of records and 
+following access paths. If a record had multiple parents (i.e., multiple incoming pointers from other records), the 
+application code had to keep track of all the various relationships. Even CODASYL committee members admitted that 
+this was like navigating around an n-dimensional data space [17].
 
-Although manual access path selection was able to make the most efficient use of the very limited hardware capabilities in the 1970s (such as tape drives, whose seeks are extremely slow), the problem was that they made the code for querying and updating the database complicated and inflexible. With both the hierarchical and the network model, if you didn’t have a path to the data you wanted, you were in a difficult situation. You could change the access paths, but then you had to go through a lot of handwritten database query code and rewrite it to handle the new access paths. It was difficult to make changes to an application’s data model.
+Although manual access path selection was able to make the most efficient use of the very limited hardware capabilities 
+in the 1970s (such as tape drives, whose seeks are extremely slow), the problem was that they made the code for 
+querying and updating the database complicated and inflexible. With both the hierarchical and the network model, 
+if you didn’t have a path to the data you wanted, you were in a difficult situation. You could change the access 
+paths, but then you had to go through a lot of handwritten database query code and rewrite it to handle the new 
+access paths. It was difficult to make changes to an application’s data model.
 
-THE RELATIONAL MODEL
-What the relational model did, by contrast, was to lay out all the data in the open: a relation (table) is simply a collection of tuples (rows), and that’s it. There are no labyrinthine nested structures, no complicated access paths to follow if you want to look at the data. You can read any or all of the rows in a table, selecting those that match an arbitrary condition. You can read a particular row by designating some columns as a key and matching on those. You can insert a new row into any table without worrying about foreign key relationships to and from other tables.iv
+### THE RELATIONAL MODEL
+What the relational model did, by contrast, was to lay out all the data in the open: a relation (table) is simply a 
+collection of tuples (rows), and that’s it. There are no labyrinthine nested structures, no complicated access paths 
+to follow if you want to look at the data. You can read any or all of the rows in a table, selecting those that match 
+an arbitrary condition. You can read a particular row by designating some columns as a key and matching on those. 
+You can insert a new row into any table without worrying about foreign key relationships to and from other tables.iv
 
-In a relational database, the query optimizer automatically decides which parts of the query to execute in which order, and which indexes to use. Those choices are effectively the “access path,” but the big difference is that they are made automatically by the query optimizer, not by the application developer, so we rarely need to think about them.
+In a relational database, the query optimizer automatically decides which parts of the query to execute in which order, 
+and which indexes to use. Those choices are effectively the “access path,” but the big difference is that they are 
+made automatically by the query optimizer, not by the application developer, so we rarely need to think about them.
 
-If you want to query your data in new ways, you can just declare a new index, and queries will automatically use whichever indexes are most appropriate. You don’t need to change your queries to take advantage of a new index. (See also “Query Languages for Data”.) The relational model thus made it much easier to add new features to applications.
+If you want to query your data in new ways, you can just declare a new index, and queries will automatically use 
+whichever indexes are most appropriate. You don’t need to change your queries to take advantage of a new index. 
+(See also “Query Languages for Data”.) The relational model thus made it much easier to add new features to applications.
 
-Query optimizers for relational databases are complicated beasts, and they have consumed many years of research and development effort [18]. But a key insight of the relational model was this: you only need to build a query optimizer once, and then all applications that use the database can benefit from it. If you don’t have a query optimizer, it’s easier to handcode the access paths for a particular query than to write a general-purpose optimizer—but the general-purpose solution wins in the long run.
+Query optimizers for relational databases are complicated beasts, and they have consumed many years of research and 
+development effort [18]. But a key insight of the relational model was this: you only need to build a query optimizer 
+once, and then all applications that use the database can benefit from it. If you don’t have a query optimizer, it’s 
+easier to handcode the access paths for a particular query than to write a general-purpose optimizer—but the 
+general-purpose solution wins in the long run.
 
-COMPARISON TO DOCUMENT DATABASES
-Document databases reverted back to the hierarchical model in one aspect: storing nested records (one-to-many relationships, like positions, education, and contact_info in Figure 2-1) within their parent record rather than in a separate table.
+### COMPARISON TO DOCUMENT DATABASES
+Document databases reverted back to the hierarchical model in one aspect: storing nested records 
+(one-to-many relationships, like positions, education, and contact_info in Figure 2-1) within their parent record rather
+than in a separate table.
 
-However, when it comes to representing many-to-one and many-to-many relationships, relational and document databases are not fundamentally different: in both cases, the related item is referenced by a unique identifier, which is called a foreign key in the relational model and a document reference in the document model [9]. That identifier is resolved at read time by using a join or follow-up queries. To date, document databases have not followed the path of CODASYL.
+However, when it comes to representing many-to-one and many-to-many relationships, relational and document databases 
+are not fundamentally different: in both cases, the related item is referenced by a unique identifier, which is called 
+a foreign key in the relational model and a document reference in the document model [9]. That identifier is resolved 
+at read time by using a join or follow-up queries. To date, document databases have not followed the path of CODASYL.
 
-Relational Versus Document Databases Today
-There are many differences to consider when comparing relational databases to document databases, including their fault-tolerance properties (see Chapter 5) and handling of concurrency (see Chapter 7). In this chapter, we will concentrate only on the differences in the data model.
+### Relational Versus Document Databases Today
+There are many differences to consider when comparing relational databases to document databases, including their 
+fault-tolerance properties (see Chapter 5) and handling of concurrency (see Chapter 7). In this chapter, we will 
+concentrate only on the differences in the data model.
 
-The main arguments in favor of the document data model are schema flexibility, better performance due to locality, and that for some applications it is closer to the data structures used by the application. The relational model counters by providing better support for joins, and many-to-one and many-to-many relationships.
+The main arguments in favor of the document data model are schema flexibility, better performance due to locality, and 
+that for some applications it is closer to the data structures used by the application. The relational model counters 
+by providing better support for joins, and many-to-one and many-to-many relationships.
 
-WHICH DATA MODEL LEADS TO SIMPLER APPLICATION CODE?
-If the data in your application has a document-like structure (i.e., a tree of one-to-many relationships, where typically the entire tree is loaded at once), then it’s probably a good idea to use a document model. The relational technique of shredding—splitting a document-like structure into multiple tables (like positions, education, and contact_info in Figure 2-1)—can lead to cumbersome schemas and unnecessarily complicated application code.
+### WHICH DATA MODEL LEADS TO SIMPLER APPLICATION CODE?
+If the data in your application has a document-like structure (i.e., a tree of one-to-many relationships, where 
+typically the entire tree is loaded at once), then it’s probably a good idea to use a document model. The relational 
+technique of shredding—splitting a document-like structure into multiple tables (like positions, education, and 
+contact_info in Figure 2-1)—can lead to cumbersome schemas and unnecessarily complicated application code.
 
-The document model has limitations: for example, you cannot refer directly to a nested item within a document, but instead you need to say something like “the second item in the list of positions for user 251” (much like an access path in the hierarchical model). However, as long as documents are not too deeply nested, that is not usually a problem.
+The document model has limitations: for example, you cannot refer directly to a nested item within a document, but 
+instead you need to say something like “the second item in the list of positions for user 251” (much like an access 
+path in the hierarchical model). However, as long as documents are not too deeply nested, that is not usually a problem.
 
-The poor support for joins in document databases may or may not be a problem, depending on the application. For example, many-to-many relationships may never be needed in an analytics application that uses a document database to record which events occurred at which time [19].
+The poor support for joins in document databases may or may not be a problem, depending on the application. For example, 
+many-to-many relationships may never be needed in an analytics application that uses a document database to record 
+which events occurred at which time [19].
 
-However, if your application does use many-to-many relationships, the document model becomes less appealing. It’s possible to reduce the need for joins by denormalizing, but then the application code needs to do additional work to keep the denormalized data consistent. Joins can be emulated in application code by making multiple requests to the database, but that also moves complexity into the application and is usually slower than a join performed by specialized code inside the database. In such cases, using a document model can lead to significantly more complex application code and worse performance [15].
+However, if your application does use many-to-many relationships, the document model becomes less appealing. It’s 
+possible to reduce the need for joins by denormalizing, but then the application code needs to do additional work to 
+keep the denormalized data consistent. Joins can be emulated in application code by making multiple requests to the 
+database, but that also moves complexity into the application and is usually slower than a join performed by specialized 
+code inside the database. In such cases, using a document model can lead to significantly more complex application code 
+and worse performance [15].
 
-It’s not possible to say in general which data model leads to simpler application code; it depends on the kinds of relationships that exist between data items. For highly interconnected data, the document model is awkward, the relational model is acceptable, and graph models (see “Graph-Like Data Models”) are the most natural.
+It’s not possible to say in general which data model leads to simpler application code; it depends on the kinds of 
+relationships that exist between data items. For highly interconnected data, the document model is awkward, the 
+relational model is acceptable, and graph models (see “Graph-Like Data Models”) are the most natural.
 
-SCHEMA FLEXIBILITY IN THE DOCUMENT MODEL
-Most document databases, and the JSON support in relational databases, do not enforce any schema on the data in documents. XML support in relational databases usually comes with optional schema validation. No schema means that arbitrary keys and values can be added to a document, and when reading, clients have no guarantees as to what fields the documents may contain.
+### SCHEMA FLEXIBILITY IN THE DOCUMENT MODEL
+Most document databases, and the JSON support in relational databases, do not enforce any schema on the data in 
+documents. XML support in relational databases usually comes with optional schema validation. No schema means that 
+arbitrary keys and values can be added to a document, and when reading, clients have no guarantees as to what fields 
+the documents may contain.
 
-Document databases are sometimes called schemaless, but that’s misleading, as the code that reads the data usually assumes some kind of structure—i.e., there is an implicit schema, but it is not enforced by the database [20]. A more accurate term is schema-on-read (the structure of the data is implicit, and only interpreted when the data is read), in contrast with schema-on-write (the traditional approach of relational databases, where the schema is explicit and the database ensures all written data conforms to it) [21].
+Document databases are sometimes called schemaless, but that’s misleading, as the code that reads the data usually 
+assumes some kind of structure—i.e., there is an implicit schema, but it is not enforced by the database [20]. A more 
+accurate term is schema-on-read (the structure of the data is implicit, and only interpreted when the data is read), 
+in contrast with schema-on-write (the traditional approach of relational databases, where the schema is explicit and 
+the database ensures all written data conforms to it) [21].
 
-Schema-on-read is similar to dynamic (runtime) type checking in programming languages, whereas schema-on-write is similar to static (compile-time) type checking. Just as the advocates of static and dynamic type checking have big debates about their relative merits [22], enforcement of schemas in database is a contentious topic, and in general there’s no right or wrong answer.
+Schema-on-read is similar to dynamic (runtime) type checking in programming languages, whereas schema-on-write is 
+similar to static (compile-time) type checking. Just as the advocates of static and dynamic type checking have big 
+debates about their relative merits [22], enforcement of schemas in database is a contentious topic, and in general 
+there’s no right or wrong answer.
 
-The difference between the approaches is particularly noticeable in situations where an application wants to change the format of its data. For example, say you are currently storing each user’s full name in one field, and you instead want to store the first name and last name separately [23]. In a document database, you would just start writing new documents with the new fields and have code in the application that handles the case when old documents are read. For example:
-
+The difference between the approaches is particularly noticeable in situations where an application wants to change the 
+format of its data. For example, say you are currently storing each user’s full name in one field, and you instead want 
+to store the first name and last name separately [23]. In a document database, you would just start writing new 
+documents with the new fields and have code in the application that handles the case when old documents are read. 
+For example:
+```
 if (user && user.name && !user.first_name) {
     // Documents written before Dec 8, 2013 don't have first_name
     user.first_name = user.name.split(" ")[0];
 }
+```
 On the other hand, in a “statically typed” database schema, you would typically perform a migration along the lines of:
-
+```
 ALTER TABLE users ADD COLUMN first_name text;
 UPDATE users SET first_name = split_part(name, ' ', 1);      -- PostgreSQL
 UPDATE users SET first_name = substring_index(name, ' ', 1);      -- MySQL
-Schema changes have a bad reputation of being slow and requiring downtime. This reputation is not entirely deserved: most relational database systems execute the ALTER TABLE statement in a few milliseconds. MySQL is a notable exception—it copies the entire table on ALTER TABLE, which can mean minutes or even hours of downtime when altering a large table—although various tools exist to work around this limitation [24, 25, 26].
+```
+Schema changes have a bad reputation of being slow and requiring downtime. This reputation is not entirely deserved: 
+most relational database systems execute the ALTER TABLE statement in a few milliseconds. MySQL is a notable 
+exception—it copies the entire table on ALTER TABLE, which can mean minutes or even hours of downtime when altering a 
+large table—although various tools exist to work around this limitation [24, 25, 26].
 
-Running the UPDATE statement on a large table is likely to be slow on any database, since every row needs to be rewritten. If that is not acceptable, the application can leave first_name set to its default of NULL and fill it in at read time, like it would with a document database.
+Running the UPDATE statement on a large table is likely to be slow on any database, since every row needs to be 
+rewritten. If that is not acceptable, the application can leave first_name set to its default of NULL and fill it in at 
+read time, like it would with a document database.
 
-The schema-on-read approach is advantageous if the items in the collection don’t all have the same structure for some reason (i.e., the data is heterogeneous)—for example, because:
+The schema-on-read approach is advantageous if the items in the collection don’t all have the same structure for some 
+reason (i.e., the data is heterogeneous)—for example, because:
 
 There are many different types of objects, and it is not practicable to put each type of object in its own table.
 
-The structure of the data is determined by external systems over which you have no control and which may change at any time.
+The structure of the data is determined by external systems over which you have no control and which may change at any 
+time.
 
-In situations like these, a schema may hurt more than it helps, and schemaless documents can be a much more natural data model. But in cases where all records are expected to have the same structure, schemas are a useful mechanism for documenting and enforcing that structure. We will discuss schemas and schema evolution in more detail in Chapter 4.
+In situations like these, a schema may hurt more than it helps, and schemaless documents can be a much more natural data 
+model. But in cases where all records are expected to have the same structure, schemas are a useful mechanism for 
+documenting and enforcing that structure. We will discuss schemas and schema evolution in more detail in Chapter 4.
 
-DATA LOCALITY FOR QUERIES
-A document is usually stored as a single continuous string, encoded as JSON, XML, or a binary variant thereof (such as MongoDB’s BSON). If your application often needs to access the entire document (for example, to render it on a web page), there is a performance advantage to this storage locality. If data is split across multiple tables, like in Figure 2-1, multiple index lookups are required to retrieve it all, which may require more disk seeks and take more time.
+### DATA LOCALITY FOR QUERIES
+A document is usually stored as a single continuous string, encoded as JSON, XML, or a binary variant thereof 
+(such as MongoDB’s BSON). If your application often needs to access the entire document (for example, to render it on 
+a web page), there is a performance advantage to this storage locality. If data is split across multiple tables, like 
+in Figure 2-1, multiple index lookups are required to retrieve it all, which may require more disk seeks and take more 
+time.
 
-The locality advantage only applies if you need large parts of the document at the same time. The database typically needs to load the entire document, even if you access only a small portion of it, which can be wasteful on large documents. On updates to a document, the entire document usually needs to be rewritten—only modifications that don’t change the encoded size of a document can easily be performed in place [19]. For these reasons, it is generally recommended that you keep documents fairly small and avoid writes that increase the size of a document [9]. These performance limitations significantly reduce the set of situations in which document databases are useful.
+The locality advantage only applies if you need large parts of the document at the same time. The database typically 
+needs to load the entire document, even if you access only a small portion of it, which can be wasteful on large 
+documents. On updates to a document, the entire document usually needs to be rewritten—only modifications that don’t 
+change the encoded size of a document can easily be performed in place [19]. For these reasons, it is generally 
+recommended that you keep documents fairly small and avoid writes that increase the size of a document [9]. These 
+performance limitations significantly reduce the set of situations in which document databases are useful.
 
-It’s worth pointing out that the idea of grouping related data together for locality is not limited to the document model. For example, Google’s Spanner database offers the same locality properties in a relational data model, by allowing the schema to declare that a table’s rows should be interleaved (nested) within a parent table [27]. Oracle allows the same, using a feature called multi-table index cluster tables [28]. The column-family concept in the Bigtable data model (used in Cassandra and HBase) has a similar purpose of managing locality [29].
+It’s worth pointing out that the idea of grouping related data together for locality is not limited to the document 
+model. For example, Google’s Spanner database offers the same locality properties in a relational data model, by 
+allowing the schema to declare that a table’s rows should be interleaved (nested) within a parent table [27]. 
+Oracle allows the same, using a feature called multi-table index cluster tables [28]. The column-family concept in the 
+Bigtable data model (used in Cassandra and HBase) has a similar purpose of managing locality [29].
 
 We will also see more on locality in Chapter 3.
 
-CONVERGENCE OF DOCUMENT AND RELATIONAL DATABASES
-Most relational database systems (other than MySQL) have supported XML since the mid-2000s. This includes functions to make local modifications to XML documents and the ability to index and query inside XML documents, which allows applications to use data models very similar to what they would do when using a document database.
+### CONVERGENCE OF DOCUMENT AND RELATIONAL DATABASES
+Most relational database systems (other than MySQL) have supported XML since the mid-2000s. This includes functions to 
+make local modifications to XML documents and the ability to index and query inside XML documents, which allows 
+applications to use data models very similar to what they would do when using a document database.
 
-PostgreSQL since version 9.3 [8], MySQL since version 5.7, and IBM DB2 since version 10.5 [30] also have a similar level of support for JSON documents. Given the popularity of JSON for web APIs, it is likely that other relational databases will follow in their footsteps and add JSON support.
+PostgreSQL since version 9.3 [8], MySQL since version 5.7, and IBM DB2 since version 10.5 [30] also have a similar level 
+of support for JSON documents. Given the popularity of JSON for web APIs, it is likely that other relational databases 
+will follow in their footsteps and add JSON support.
+ 
+On the document database side, RethinkDB supports relational-like joins in its query language, and some MongoDB drivers
+automatically resolve document references (effectively performing a client-side join, although this is likely to be 
+slower than a join performed in the database since it requires additional network round-trips and is less optimized).
 
-On the document database side, RethinkDB supports relational-like joins in its query language, and some MongoDB drivers automatically resolve document references (effectively performing a client-side join, although this is likely to be slower than a join performed in the database since it requires additional network round-trips and is less optimized).
-
-It seems that relational and document databases are becoming more similar over time, and that is a good thing: the data models complement each other.v If a database is able to handle document-like data and also perform relational queries on it, applications can use the combination of features that best fits their needs.
+It seems that relational and document databases are becoming more similar over time, and that is a good thing: the data 
+models complement each other.v If a database is able to handle document-like data and also perform relational queries 
+on it, applications can use the combination of features that best fits their needs.
 
 A hybrid of the relational and document models is a good route for databases to take in the future.
 
-Query Languages for Data
-When the relational model was introduced, it included a new way of querying data: SQL is a declarative query language, whereas IMS and CODASYL queried the database using imperative code. What does that mean?
+### Query Languages for Data
+When the relational model was introduced, it included a new way of querying data: SQL is a declarative query language, 
+whereas IMS and CODASYL queried the database using imperative code. What does that mean?
 
-Many commonly used programming languages are imperative. For example, if you have a list of animal species, you might write something like this to return only the sharks in the list:
-
+Many commonly used programming languages are imperative. For example, if you have a list of animal species, you might 
+write something like this to return only the sharks in the list:
+```
 function getSharks() {
     var sharks = [];
     for (var i = 0; i < animals.length; i++) {
@@ -336,32 +467,53 @@ function getSharks() {
     }
     return sharks;
 }
+```
 In the relational algebra, you would instead write:
-
+```
 sharks  =  σfamily = “Sharks” (animals)
-
+```
 where σ (the Greek letter sigma) is the selection operator, returning only those animals that match the condition family = “Sharks”.
 
 When SQL was defined, it followed the structure of the relational algebra fairly closely:
-
+```
 SELECT * FROM animals WHERE family = 'Sharks';
-An imperative language tells the computer to perform certain operations in a certain order. You can imagine stepping through the code line by line, evaluating conditions, updating variables, and deciding whether to go around the loop one more time.
+```
+An imperative language tells the computer to perform certain operations in a certain order. You can imagine stepping
+through the code line by line, evaluating conditions, updating variables, and deciding whether to go around the loop one
+more time.
 
-In a declarative query language, like SQL or relational algebra, you just specify the pattern of the data you want—what conditions the results must meet, and how you want the data to be transformed (e.g., sorted, grouped, and aggregated)—but not how to achieve that goal. It is up to the database system’s query optimizer to decide which indexes and which join methods to use, and in which order to execute various parts of the query.
+In a declarative query language, like SQL or relational algebra, you just specify the pattern of the data you want—what
+conditions the results must meet, and how you want the data to be transformed (e.g., sorted, grouped, and aggregated)—but
+not how to achieve that goal. It is up to the database system’s query optimizer to decide which indexes and which join 
+methods to use, and in which order to execute various parts of the query.
 
-A declarative query language is attractive because it is typically more concise and easier to work with than an imperative API. But more importantly, it also hides implementation details of the database engine, which makes it possible for the database system to introduce performance improvements without requiring any changes to queries.
+A declarative query language is attractive because it is typically more concise and easier to work with than an 
+imperative API. But more importantly, it also hides implementation details of the database engine, which makes it 
+possible for the database system to introduce performance improvements without requiring any changes to queries.
 
-For example, in the imperative code shown at the beginning of this section, the list of animals appears in a particular order. If the database wants to reclaim unused disk space behind the scenes, it might need to move records around, changing the order in which the animals appear. Can the database do that safely, without breaking queries?
+For example, in the imperative code shown at the beginning of this section, the list of animals appears in a particular 
+order. If the database wants to reclaim unused disk space behind the scenes, it might need to move records around, 
+changing the order in which the animals appear. Can the database do that safely, without breaking queries?
 
-The SQL example doesn’t guarantee any particular ordering, and so it doesn’t mind if the order changes. But if the query is written as imperative code, the database can never be sure whether the code is relying on the ordering or not. The fact that SQL is more limited in functionality gives the database much more room for automatic optimizations.
+The SQL example doesn’t guarantee any particular ordering, and so it doesn’t mind if the order changes. But if the query 
+is written as imperative code, the database can never be sure whether the code is relying on the ordering or not. The 
+fact that SQL is more limited in functionality gives the database much more room for automatic optimizations.
 
-Finally, declarative languages often lend themselves to parallel execution. Today, CPUs are getting faster by adding more cores, not by running at significantly higher clock speeds than before [31]. Imperative code is very hard to parallelize across multiple cores and multiple machines, because it specifies instructions that must be performed in a particular order. Declarative languages have a better chance of getting faster in parallel execution because they specify only the pattern of the results, not the algorithm that is used to determine the results. The database is free to use a parallel implementation of the query language, if appropriate [32].
+Finally, declarative languages often lend themselves to parallel execution. Today, CPUs are getting faster by adding 
+more cores, not by running at significantly higher clock speeds than before [31]. Imperative code is very hard to 
+parallelize across multiple cores and multiple machines, because it specifies instructions that must be performed in a 
+particular order. Declarative languages have a better chance of getting faster in parallel execution because they 
+specify only the pattern of the results, not the algorithm that is used to determine the results. The database is free 
+to use a parallel implementation of the query language, if appropriate [32].
+(Aaron's Notes: Above is important.)
 
-Declarative Queries on the Web
-The advantages of declarative query languages are not limited to just databases. To illustrate the point, let’s compare declarative and imperative approaches in a completely different environment: a web browser.
+### Declarative Queries on the Web
+The advantages of declarative query languages are not limited to just databases. To illustrate the point, let’s compare 
+declarative and imperative approaches in a completely different environment: a web browser.
 
-Say you have a website about animals in the ocean. The user is currently viewing the page on sharks, so you mark the navigation item “Sharks” as currently selected, like this:
-
+Say you have a website about animals in the ocean. The user is currently viewing the page on sharks, so you mark the 
+navigation item “Sharks” as currently selected, like this:
+```
 <ul>
     <li class="selected"> 1
         <p>Sharks</p> 2
@@ -380,30 +532,36 @@ Say you have a website about animals in the ocean. The user is currently viewing
         </ul>
     </li>
 </ul>
-1
-The selected item is marked with the CSS class "selected".
+```
+1. The selected item is marked with the CSS class "selected".
+2. <p>Sharks</p> is the title of the currently selected page.
 
-2
-<p>Sharks</p> is the title of the currently selected page.
-
-Now say you want the title of the currently selected page to have a blue background, so that it is visually highlighted. This is easy, using CSS:
-
+Now say you want the title of the currently selected page to have a blue background, so that it is visually highlighted.
+This is easy, using CSS:
+```
 li.selected > p {
     background-color: blue;
 }
-Here the CSS selector li.selected > p declares the pattern of elements to which we want to apply the blue style: namely, all <p> elements whose direct parent is an <li> element with a CSS class of selected. The element <p>Sharks</p> in the example matches this pattern, but <p>Whales</p> does not match because its <li> parent lacks class="selected".
+```
+Here the CSS selector li.selected > p declares the pattern of elements to which we want to apply the blue style: namely,
+all <p> elements whose direct parent is an <li> element with a CSS class of selected. The element <p>Sharks</p> in the 
+example matches this pattern, but <p>Whales</p> does not match because its <li> parent lacks class="selected".
 
 If you were using XSL instead of CSS, you could do something similar:
-
+```
 <xsl:template match="li[@class='selected']/p">
     <fo:block background-color="blue">
         <xsl:apply-templates/>
     </fo:block>
 </xsl:template>
-Here, the XPath expression li[@class='selected']/p is equivalent to the CSS selector li.selected > p in the previous example. What CSS and XSL have in common is that they are both declarative languages for specifying the styling of a document.
+```
+Here, the XPath expression li[@class='selected']/p is equivalent to the CSS selector li.selected > p in the previous 
+example. What CSS and XSL have in common is that they are both declarative languages for specifying the styling of a 
+document.
 
-Imagine what life would be like if you had to use an imperative approach. In JavaScript, using the core Document Object Model (DOM) API, the result might look something like this:
-
+Imagine what life would be like if you had to use an imperative approach. In JavaScript, using the core Document Object 
+Model (DOM) API, the result might look something like this:
+```
 var liElements = document.getElementsByTagName("li");
 for (var i = 0; i < liElements.length; i++) {
     if (liElements[i].className === "selected") {
@@ -416,71 +574,81 @@ for (var i = 0; i < liElements.length; i++) {
         }
     }
 }
-This JavaScript imperatively sets the element <p>Sharks</p> to have a blue background, but the code is awful. Not only is it much longer and harder to understand than the CSS and XSL equivalents, but it also has some serious problems:
+```
+This JavaScript imperatively sets the element <p>Sharks</p> to have a blue background, but the code is awful. Not only 
+is it much longer and harder to understand than the CSS and XSL equivalents, but it also has some serious problems:
 
-If the selected class is removed (e.g., because the user clicks a different page), the blue color won’t be removed, even if the code is rerun—and so the item will remain highlighted until the entire page is reloaded. With CSS, the browser automatically detects when the li.selected > p rule no longer applies and removes the blue background as soon as the selected class is removed.
+If the selected class is removed (e.g., because the user clicks a different page), the blue color won’t be removed, 
+even if the code is rerun—and so the item will remain highlighted until the entire page is reloaded. With CSS, the 
+browser automatically detects when the li.selected > p rule no longer applies and removes the blue background as soon 
+as the selected class is removed.
 
-If you want to take advantage of a new API, such as document.getElementsByClassName("selected") or even document.evaluate()—which may improve performance—you have to rewrite the code. On the other hand, browser vendors can improve the performance of CSS and XPath without breaking compatibility.
+If you want to take advantage of a new API, such as document.getElementsByClassName("selected") or even 
+document.evaluate()—which may improve performance—you have to rewrite the code. On the other hand, browser vendors can 
+improve the performance of CSS and XPath without breaking compatibility.
 
-In a web browser, using declarative CSS styling is much better than manipulating styles imperatively in JavaScript. Similarly, in databases, declarative query languages like SQL turned out to be much better than imperative query APIs.vi
+In a web browser, using declarative CSS styling is much better than manipulating styles imperatively in JavaScript. 
+Similarly, in databases, declarative query languages like SQL turned out to be much better than imperative query APIs.vi
 
-MapReduce Querying
-MapReduce is a programming model for processing large amounts of data in bulk across many machines, popularized by Google [33]. A limited form of MapReduce is supported by some NoSQL datastores, including MongoDB and CouchDB, as a mechanism for performing read-only queries across many documents.
+### MapReduce Querying
+MapReduce is a programming model for processing large amounts of data in bulk across many machines, popularized by 
+Google [33]. A limited form of MapReduce is supported by some NoSQL datastores, including MongoDB and CouchDB, as a 
+mechanism for performing read-only queries across many documents.
 
-MapReduce in general is described in more detail in Chapter 10. For now, we’ll just briefly discuss MongoDB’s use of the model.
+MapReduce in general is described in more detail in Chapter 10. For now, we’ll just briefly discuss MongoDB’s use of 
+the model.
 
-MapReduce is neither a declarative query language nor a fully imperative query API, but somewhere in between: the logic of the query is expressed with snippets of code, which are called repeatedly by the processing framework. It is based on the map (also known as collect) and reduce (also known as fold or inject) functions that exist in many functional programming languages.
+MapReduce is neither a declarative query language nor a fully imperative query API, but somewhere in between: the logic 
+of the query is expressed with snippets of code, which are called repeatedly by the processing framework. It is based on 
+the map (also known as collect) and reduce (also known as fold or inject) functions that exist in many functional 
+programming languages.
 
-To give an example, imagine you are a marine biologist, and you add an observation record to your database every time you see animals in the ocean. Now you want to generate a report saying how many sharks you have sighted per month.
+To give an example, imagine you are a marine biologist, and you add an observation record to your database every time 
+you see animals in the ocean. Now you want to generate a report saying how many sharks you have sighted per month.
 
 In PostgreSQL you might express that query like this:
-
+```
 SELECT date_trunc('month', observation_timestamp) AS observation_month, 1
        sum(num_animals) AS total_animals
 FROM observations
 WHERE family = 'Sharks'
 GROUP BY observation_month;
-1
-The date_trunc('month', timestamp) function determines the calendar month containing timestamp, and returns another timestamp representing the beginning of that month. In other words, it rounds a timestamp down to the nearest month.
+```
+1. The date_trunc('month', timestamp) function determines the calendar month containing timestamp, and returns another 
+timestamp representing the beginning of that month. In other words, it rounds a timestamp down to the nearest month.
 
-This query first filters the observations to only show species in the Sharks family, then groups the observations by the calendar month in which they occurred, and finally adds up the number of animals seen in all observations in that month.
+This query first filters the observations to only show species in the Sharks family, then groups the observations by 
+the calendar month in which they occurred, and finally adds up the number of animals seen in all observations in that 
+month.
 
 The same can be expressed with MongoDB’s MapReduce feature as follows:
-
+```
 db.observations.mapReduce(
-    function map() { 2
+    function map() { // 2
         var year  = this.observationTimestamp.getFullYear();
         var month = this.observationTimestamp.getMonth() + 1;
-        emit(year + "-" + month, this.numAnimals); 3
+        emit(year + "-" + month, this.numAnimals); // 3
     },
-    function reduce(key, values) { 4
-        return Array.sum(values); 5
+    function reduce(key, values) { // 4
+        return Array.sum(values); // 5
     },
     {
-        query: { family: "Sharks" }, 1
-        out: "monthlySharkReport" 6
+        query: { family: "Sharks" }, // 1
+        out: "monthlySharkReport" // 6
     }
 );
-1
-The filter to consider only shark species can be specified declaratively (this is a MongoDB-specific extension to MapReduce).
-
-2
-The JavaScript function map is called once for every document that matches query, with this set to the document object.
-
-3
-The map function emits a key (a string consisting of year and month, such as "2013-12" or "2014-1") and a value (the number of animals in that observation).
-
-4
-The key-value pairs emitted by map are grouped by key. For all key-value pairs with the same key (i.e., the same month and year), the reduce function is called once.
-
-5
-The reduce function adds up the number of animals from all observations in a particular month.
-
-6
-The final output is written to the collection monthlySharkReport.
+```
+1.The filter to consider only shark species can be specified declaratively (this is a MongoDB-specific extension to MapReduce).
+2.The JavaScript function map is called once for every document that matches query, with this set to the document object.
+3.The map function emits a key (a string consisting of year and month, such as "2013-12" or "2014-1") and a value 
+(the number of animals in that observation).
+4.The key-value pairs emitted by map are grouped by key. For all key-value pairs with the same key 
+(i.e., the same month and year), the reduce function is called once.
+5.The reduce function adds up the number of animals from all observations in a particular month.
+6.The final output is written to the collection monthlySharkReport.
 
 For example, say the observations collection contains these two documents:
-
+```
 {
     observationTimestamp: Date.parse("Mon, 25 Dec 1995 12:34:56 GMT"),
     family:     "Sharks",
@@ -493,16 +661,30 @@ For example, say the observations collection contains these two documents:
     species:    "Carcharias taurus",
     numAnimals: 4
 }
-The map function would be called once for each document, resulting in emit("1995-12", 3) and emit("1995-12", 4). Subsequently, the reduce function would be called with reduce("1995-12", [3, 4]), returning 7.
+```
+The map function would be called once for each document, resulting in emit("1995-12", 3) and emit("1995-12", 4). 
+Subsequently, the reduce function would be called with reduce("1995-12", [3, 4]), returning 7.
 
-The map and reduce functions are somewhat restricted in what they are allowed to do. They must be pure functions, which means they only use the data that is passed to them as input, they cannot perform additional database queries, and they must not have any side effects. These restrictions allow the database to run the functions anywhere, in any order, and rerun them on failure. However, they are nevertheless powerful: they can parse strings, call library functions, perform calculations, and more.
+The map and reduce functions are somewhat restricted in what they are allowed to do. They must be pure functions, which 
+means they only use the data that is passed to them as input, they cannot perform additional database queries, and they 
+must not have any side effects. These restrictions allow the database to run the functions anywhere, in any order, and 
+rerun them on failure. However, they are nevertheless powerful: they can parse strings, call library functions, perform 
+calculations, and more.
 
-MapReduce is a fairly low-level programming model for distributed execution on a cluster of machines. Higher-level query languages like SQL can be implemented as a pipeline of MapReduce operations (see Chapter 10), but there are also many distributed implementations of SQL that don’t use MapReduce. Note there is nothing in SQL that constrains it to running on a single machine, and MapReduce doesn’t have a monopoly on distributed query execution.
+MapReduce is a fairly low-level programming model for distributed execution on a cluster of machines. Higher-level query 
+languages like SQL can be implemented as a pipeline of MapReduce operations (see Chapter 10), but there are also many 
+distributed implementations of SQL that don’t use MapReduce. Note there is nothing in SQL that constrains it to running 
+on a single machine, and MapReduce doesn’t have a monopoly on distributed query execution.
+(Aaron's Notes: Above is important.)
+Being able to use JavaScript code in the middle of a query is a great feature for advanced queries, but it’s not limited 
+to MapReduce—some SQL databases can be extended with JavaScript functions too [34].
 
-Being able to use JavaScript code in the middle of a query is a great feature for advanced queries, but it’s not limited to MapReduce—some SQL databases can be extended with JavaScript functions too [34].
-
-A usability problem with MapReduce is that you have to write two carefully coordinated JavaScript functions, which is often harder than writing a single query. Moreover, a declarative query language offers more opportunities for a query optimizer to improve the performance of a query. For these reasons, MongoDB 2.2 added support for a declarative query language called the aggregation pipeline [9]. In this language, the same shark-counting query looks like this:
-
+A usability problem with MapReduce is that you have to write two carefully coordinated JavaScript functions, which is 
+often harder than writing a single query. Moreover, a declarative query language offers more opportunities for a query 
+optimizer to improve the performance of a query. For these reasons, MongoDB 2.2 added support for a declarative query 
+language called the aggregation pipeline [9]. In this language, the same shark-counting query looks like this:
+(Aaron's Notes: Above is important.)
+```
 db.observations.aggregate([
     { $match: { family: "Sharks" } },
     { $group: {
@@ -513,29 +695,45 @@ db.observations.aggregate([
         totalAnimals: { $sum: "$numAnimals" }
     } }
 ]);
-The aggregation pipeline language is similar in expressiveness to a subset of SQL, but it uses a JSON-based syntax rather than SQL’s English-sentence-style syntax; the difference is perhaps a matter of taste. The moral of the story is that a NoSQL system may find itself accidentally reinventing SQL, albeit in disguise.
+```
+The aggregation pipeline language is similar in expressiveness to a subset of SQL, but it uses a JSON-based syntax 
+rather than SQL’s English-sentence-style syntax; the difference is perhaps a matter of taste. The moral of the story is 
+that a NoSQL system may find itself accidentally reinventing SQL, albeit in disguise.
 
-Graph-Like Data Models
-We saw earlier that many-to-many relationships are an important distinguishing feature between different data models. If your application has mostly one-to-many relationships (tree-structured data) or no relationships between records, the document model is appropriate.
+### Graph-Like Data Models
+We saw earlier that many-to-many relationships are an important distinguishing feature between different data models. 
+If your application has mostly one-to-many relationships (tree-structured data) or no relationships between records, the 
+document model is appropriate.
+(Aaron's Notes: Above is important.)
+But what if many-to-many relationships are very common in your data? The relational model can handle simple cases of 
+many-to-many relationships, but as the connections within your data become more complex, it becomes more natural to 
+start modeling your data as a graph.
+(Aaron's Notes: Above is important.)
+A graph consists of two kinds of objects: vertices (also known as nodes or entities) and edges (also known as 
+relationships or arcs). Many kinds of data can be modeled as a graph. Typical examples include:
 
-But what if many-to-many relationships are very common in your data? The relational model can handle simple cases of many-to-many relationships, but as the connections within your data become more complex, it becomes more natural to start modeling your data as a graph.
-
-A graph consists of two kinds of objects: vertices (also known as nodes or entities) and edges (also known as relationships or arcs). Many kinds of data can be modeled as a graph. Typical examples include:
-
-Social graphs
+* Social graphs
 Vertices are people, and edges indicate which people know each other.
 
-The web graph
+* The web graph
 Vertices are web pages, and edges indicate HTML links to other pages.
 
-Road or rail networks
+* Road or rail networks
 Vertices are junctions, and edges represent the roads or railway lines between them.
 
-Well-known algorithms can operate on these graphs: for example, car navigation systems search for the shortest path between two points in a road network, and PageRank can be used on the web graph to determine the popularity of a web page and thus its ranking in search results.
+Well-known algorithms can operate on these graphs: for example, car navigation systems search for the shortest path 
+between two points in a road network, and PageRank can be used on the web graph to determine the popularity of a web 
+page and thus its ranking in search results.
+(Aaron's Notes: Above is important.)
+In the examples just given, all the vertices in a graph represent the same kind of thing (people, web pages, or road 
+junctions, respectively). However, graphs are not limited to such homogeneous data: an equally powerful use of graphs 
+is to provide a consistent way of storing completely different types of objects in a single datastore. For example, 
+Facebook maintains a single graph with many different types of vertices and edges: vertices represent people, 
+locations, events, checkins, and comments made by users; edges indicate which people are friends with each other, 
+which checkin happened in which location, who commented on which post, who attended which event, and so on [35].
 
-In the examples just given, all the vertices in a graph represent the same kind of thing (people, web pages, or road junctions, respectively). However, graphs are not limited to such homogeneous data: an equally powerful use of graphs is to provide a consistent way of storing completely different types of objects in a single datastore. For example, Facebook maintains a single graph with many different types of vertices and edges: vertices represent people, locations, events, checkins, and comments made by users; edges indicate which people are friends with each other, which checkin happened in which location, who commented on which post, who attended which event, and so on [35].
-
-In this section we will use the example shown in Figure 2-5. It could be taken from a social network or a genealogical database: it shows two people, Lucy from Idaho and Alain from Beaune, France. They are married and living in London.
+In this section we will use the example shown in Figure 2-5. It could be taken from a social network or a genealogical 
+database: it shows two people, Lucy from Idaho and Alain from Beaune, France. They are married and living in London.
 
 ddia 0205
 Figure 2-5. Example of graph-structured data (boxes represent vertices, arrows represent edges).
