@@ -94,7 +94,7 @@ different from the best choice for another use case. It therefore seems likely t
 relational databases will continue to be used alongside a broad variety of nonrelational datastores—an idea that is 
 sometimes called polyglot persistence [3].
 
-The Object-Relational Mismatch
+### The Object-Relational Mismatch
 Most application development today is done in object-oriented programming languages, which leads to a common criticism
 of the SQL data model: if data is stored in relational tables, an awkward translation layer is required between the
 objects in the application code and the database model of tables, rows, and columns. The disconnect between the models 
@@ -109,6 +109,7 @@ exactly once per user, so they can be modeled as columns on the users table. How
 one job in their career (positions), and people may have varying numbers of periods of education and any number of 
 pieces of contact information. There is a one-to-many relationship from the user to these items, which can be 
 represented in various ways:
+
 1. In the traditional SQL model (prior to SQL:1999), the most common normalized representation is to put positions, 
 education, and contact information in separate tables, with a foreign key reference to the users table, 
 as in Figure 2-1.
@@ -166,7 +167,8 @@ information imply a tree structure in the data, and the JSON representation make
 
 ddia 0202
 Figure 2-2. One-to-many relationships forming a tree structure.
-Many-to-One and Many-to-Many Relationships
+
+### Many-to-One and Many-to-Many Relationships
 In Example 2-1 in the preceding section, region_id and industry_id are given as IDs, not as plain-text strings 
 "Greater Seattle Area" and "Philanthropy". Why?
 
@@ -195,28 +197,46 @@ write overheads, and risks inconsistencies (where some copies of the information
 Removing such duplication is the key idea behind normalization in databases.ii
 
 NOTE
-Database administrators and developers love to argue about normalization and denormalization, but we will suspend judgment for now. In Part III of this book we will return to this topic and explore systematic ways of dealing with caching, denormalization, and derived data.
+Database administrators and developers love to argue about normalization and denormalization, but we will suspend 
+judgment for now. In Part III of this book we will return to this topic and explore systematic ways of dealing with 
+caching, denormalization, and derived data.
 
-Unfortunately, normalizing this data requires many-to-one relationships (many people live in one particular region, many people work in one particular industry), which don’t fit nicely into the document model. In relational databases, it’s normal to refer to rows in other tables by ID, because joins are easy. In document databases, joins are not needed for one-to-many tree structures, and support for joins is often weak.iii
+Unfortunately, normalizing this data requires many-to-one relationships (many people live in one particular region, many
+people work in one particular industry), which don’t fit nicely into the document model. In relational databases, it’s
+normal to refer to rows in other tables by ID, because joins are easy. In document databases, joins are not needed for
+one-to-many tree structures, and support for joins is often weak.iii
 
-If the database itself does not support joins, you have to emulate a join in application code by making multiple queries to the database. (In this case, the lists of regions and industries are probably small and slow-changing enough that the application can simply keep them in memory. But nevertheless, the work of making the join is shifted from the database to the application code.)
+If the database itself does not support joins, you have to emulate a join in application code by making multiple queries
+to the database. (In this case, the lists of regions and industries are probably small and slow-changing enough that the
+application can simply keep them in memory. But nevertheless, the work of making the join is shifted from the database 
+to the application code.)
 
-Moreover, even if the initial version of an application fits well in a join-free document model, data has a tendency of becoming more interconnected as features are added to applications. For example, consider some changes we could make to the résumé example:
+Moreover, even if the initial version of an application fits well in a join-free document model, data has a tendency of 
+becoming more interconnected as features are added to applications. For example, consider some changes we could make to 
+the résumé example:
 
-Organizations and schools as entities
-In the previous description, organization (the company where the user worked) and school_name (where they studied) are just strings. Perhaps they should be references to entities instead? Then each organization, school, or university could have its own web page (with logo, news feed, etc.); each résumé could link to the organizations and schools that it mentions, and include their logos and other information (see Figure 2-3 for an example from LinkedIn).
+<b>Organizations and schools as entities</b>
+In the previous description, organization (the company where the user worked) and school_name (where they studied) are 
+just strings. Perhaps they should be references to entities instead? Then each organization, school, or university could 
+have its own web page (with logo, news feed, etc.); each résumé could link to the organizations and schools that it 
+mentions, and include their logos and other information (see Figure 2-3 for an example from LinkedIn).
 
-Recommendations
-Say you want to add a new feature: one user can write a recommendation for another user. The recommendation is shown on the résumé of the user who was recommended, together with the name and photo of the user making the recommendation. If the recommender updates their photo, any recommendations they have written need to reflect the new photo. Therefore, the recommendation should have a reference to the author’s profile.
+<b>Recommendations</b>
+Say you want to add a new feature: one user can write a recommendation for another user. The recommendation is shown on 
+the résumé of the user who was recommended, together with the name and photo of the user making the recommendation. If 
+the recommender updates their photo, any recommendations they have written need to reflect the new photo. Therefore, the 
+recommendation should have a reference to the author’s profile.
 
 ddia 0203
 Figure 2-3. The company name is not just a string, but a link to a company entity. Screenshot of linkedin.com.
-Figure 2-4 illustrates how these new features require many-to-many relationships. The data within each dotted rectangle can be grouped into one document, but the references to organizations, schools, and other users need to be represented as references, and require joins when queried.
+Figure 2-4 illustrates how these new features require many-to-many relationships. The data within each dotted rectangle 
+can be grouped into one document, but the references to organizations, schools, and other users need to be represented 
+as references, and require joins when queried.
 
 ddia 0204
 Figure 2-4. Extending résumés with many-to-many relationships.
 
-Are Document Databases Repeating History?
+### Are Document Databases Repeating History?
 While many-to-many relationships and joins are routinely used in relational databases, document databases and NoSQL reopened the debate on how best to represent such relationships in a database. This debate is much older than NoSQL—in fact, it goes back to the very earliest computerized database systems.
 
 The most popular database for business data processing in the 1970s was IBM’s Information Management System (IMS), originally developed for stock-keeping in the Apollo space program and first commercially released in 1968 [13]. It is still in use and maintained today, running on OS/390 on IBM mainframes [14].

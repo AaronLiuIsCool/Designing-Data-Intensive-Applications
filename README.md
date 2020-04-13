@@ -14,8 +14,13 @@ System Design is all about handle trade-off (Same as our day to day life). Feel 
     * Human Errors
     * How Important Is Reliability?
 - [ ] Scalability
-    *
+    * Describing Load
+    * Describing Performance
+    * Approaches for Coping with Load
 - [ ] Maintainability
+    * Operability: Making Life Easy for Operations
+    * Simplicity: Managing Complexity
+    * Evolvability: Making Change Easy
 - [ ] Summary
 ### 2. Data Models and Query Languages
 - [ ] Relation Model Versus Document Model
@@ -93,6 +98,11 @@ System Design is all about handle trade-off (Same as our day to day life). Feel 
 - [ ] Partitioning and Secondary Indexes
     * Partitioning Secondary Indexes by Document
     * Partitioning Secondary Indexes by Term
+- [ ] Rebalancing Partitions
+    * Strategies for Rebalancing
+    * Operations: Automatic or Manual Rebalancing
+- [ ] Request Routing
+    * Parallel Query Execution
 - [ ] Summary
 ### 7. Transactions
 - [ ] The Slippery Concept of a Transaction
@@ -103,6 +113,10 @@ System Design is all about handle trade-off (Same as our day to day life). Feel 
     * Snapshot Isolation and Repeatable Read
     * Preventing Lost Updates
     * Write Skew
+- [ ] Serializability
+    * Actual Serial Execution 
+    * Two-Phase Locking (2PL)
+    * Serializable Snapshot Isolation (SSI)
 - [ ] Summary 
 ### 8. The Trouble with Distributed Systems
 - [ ] Faults and Partial Failures
@@ -123,44 +137,68 @@ System Design is all about handle trade-off (Same as our day to day life). Feel 
     * System Model and Reality
 - [ ] Summary
 ### 9. Consistency and Consensus
-- [ ]
-    *
-    *
-    *
-- [ ]
-    *
-    *
-    *
+- [ ] Consistency Guarantees
+- [ ] Linearizability
+    * What Makes a System Linearizable?
+    * Relying on Linearizability
+    * Implementing Linearizable Systems
+    * The Cost of Linearizability
+- [ ] Ordering Guarantees
+    * Ordering and Causality
+    * Sequence NUmber Ordering
+    * Total Order Broadcast
+- [ ] Distributed Transactions and Consensus
+    * Atomic Commit and Two-Phase Commit (2PC)
+    * Distributed Transactions in Practice
+    * Fault-Tolerant Consensus
+    * Membership and Coordination Services
 - [ ] Summary
 ## III. Derived Data
-### 10. Batch Processing with Unix Tools
-- [ ]
-    *
-    *
-    *
-- [ ]
-    *
-    *
-    *
+### 10. Batch Processing
+- [ ] Batch Processing with Unix Tools
+    * Simple Log Analysis
+    * The Unix Philosophy
+- [ ] MapReduce and Distributed Filesystems
+    * MapReduce Job Execution
+    * Reduce-Side Joins and Grouping
+    * Map-Side Joins
+    * The Output of Batch Workflows
+    * Comparing Hadoop to Distributed Databases
+- [ ] Beyond MapReduce
+    * Materialization of Intermediate State
+    * Graphs and Iterative Processing
+    * High-Level APIs and Languages
 - [ ] Summary
 ### 11. Stream Processing
-- [ ]
-    *
-    *
-    *
-- [ ]
-    *
-    *
-    *
+- [ ] Transmitting Event Streams
+    * Messaging Systems
+    * Partitioned Logs
+- [ ] Databases and Streams
+    * Keeping Systems in Sync
+    * Change Data Capture
+    * Event Sourcing
+    * State, Streams, and Immutability
+- [ ] Processing Streams
+    * Uses of Stream Processing
+    * Reasoning About Time
+    * Stream Joins
+    * Fault Tolerance
 - [ ] Summary
 ### 12. The Future of Data System
-- [ ]
-    *
-    *
-    *
-- [ ]
-    *
-    *
-    *    
+- [ ] Data Integration
+    * Combining Specialized Tools by Deriving Data
+    * Batch and Stream Processing
+- [ ] Unbundling Databases
+    * Composing Data Storage Technologies
+    * Designing Application Around Dataflow
+    * Observing Derived State
+- [ ] Aiming for Correctness
+    * The End-to-End Argument for Databases
+    * Enforcing Constraints
+    * Timeliness and Integrity
+    * Trust, but Verify
+- [ ] Doing the Right Thing
+    * Predictive Analytics
+    * Privacy and Tracking
 - [ ] Summary
 
