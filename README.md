@@ -23,13 +23,13 @@ System Design is all about handle trade-off (Same as our day to day life). Feel 
     * Evolvability: Making Change Easy
 - [ ] Summary
 ### 2. Data Models and Query Languages
-- [ ] Relation Model Versus Document Model
+- [X] Relation Model Versus Document Model
     * The Birth of NoSQL
     * The Object-Relational Mismatch
     * Many-to-One and Many-to-Many Relationships
     * Are Document Databases Repeating History?
     * Relational Versus Document Databases Today
-- [ ] Query Languages for Data
+- [X] Query Languages for Data
     * Declarative Queries on the Web
     * MapReduce Querying
 - [ ] Graph-Like Data Models
