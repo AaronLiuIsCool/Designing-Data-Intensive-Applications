@@ -741,34 +741,34 @@ database: it shows two people, Lucy from Idaho and Alain from Beaune, France. Th
 
 ddia 0205
 Figure 2-5. Example of graph-structured data (boxes represent vertices, arrows represent edges).
-There are several different, but related, ways of structuring and querying data in graphs. In this section we will discuss the property graph model (implemented by Neo4j, Titan, and InfiniteGraph) and the triple-store model (implemented by Datomic, AllegroGraph, and others). We will look at three declarative query languages for graphs: Cypher, SPARQL, and Datalog. Similar concepts appear in other graph query languages such as Gremlin [36] and graph processing frameworks like Pregel (see Chapter 10).
+There are several different, but related, ways of structuring and querying data in graphs. In this section we will 
+discuss the property graph model (implemented by Neo4j, Titan, and InfiniteGraph) and the triple-store model 
+(implemented by Datomic, AllegroGraph, and others). We will look at three declarative query languages for graphs: 
+Cypher, SPARQL, and Datalog. Similar concepts appear in other graph query languages such as Gremlin [36] and graph 
+processing frameworks like Pregel (see Chapter 10).
+(Aaron's Notes: Above is important.)
 
 ### Property Graphs
 In the property graph model, each vertex consists of:
-
-A unique identifier
-
-A set of outgoing edges
-
-A set of incoming edges
-
-A collection of properties (key-value pairs)
+1. A unique identifier
+2. A set of outgoing edges
+3. A set of incoming edges
+4. A collection of properties (key-value pairs)
 
 Each edge consists of:
+1. A unique identifier
+2. The vertex at which the edge starts (the tail vertex)
+3. The vertex at which the edge ends (the head vertex)
+4. A label to describe the kind of relationship between the two vertices
+5. A collection of properties (key-value pairs)
 
-A unique identifier
-
-The vertex at which the edge starts (the tail vertex)
-
-The vertex at which the edge ends (the head vertex)
-
-A label to describe the kind of relationship between the two vertices
-
-A collection of properties (key-value pairs)
-
-You can think of a graph store as consisting of two relational tables, one for vertices and one for edges, as shown in Example 2-2 (this schema uses the PostgreSQL json datatype to store the properties of each vertex or edge). The head and tail vertex are stored for each edge; if you want the set of incoming or outgoing edges for a vertex, you can query the edges table by head_vertex or tail_vertex, respectively.
+You can think of a graph store as consisting of two relational tables, one for vertices and one for edges, as shown in 
+Example 2-2 (this schema uses the PostgreSQL json datatype to store the properties of each vertex or edge). The head 
+and tail vertex are stored for each edge; if you want the set of incoming or outgoing edges for a vertex, you can query 
+the edges table by head_vertex or tail_vertex, respectively.
 
 Example 2-2. Representing a property graph using a relational schema
+```
 CREATE TABLE vertices (
     vertex_id   integer PRIMARY KEY,
     properties  json
@@ -784,24 +784,41 @@ CREATE TABLE edges (
 
 CREATE INDEX edges_tails ON edges (tail_vertex);
 CREATE INDEX edges_heads ON edges (head_vertex);
-Some important aspects of this model are:
+```
+<b>Some important aspects of this model are:</b>
+1. Any vertex can have an edge connecting it with any other vertex. There is no schema that restricts which kinds of 
+things can or cannot be associated.
+2. Given any vertex, you can efficiently find both its incoming and its outgoing edges, and thus traverse the graph—
+i.e., follow a path through a chain of vertices—both forward and backward. (That’s why Example 2-2 has indexes on both 
+the tail_vertex and head_vertex columns.)
+3. By using different labels for different kinds of relationships, you can store several different kinds of information
+in a single graph, while still maintaining a clean data model.
 
-Any vertex can have an edge connecting it with any other vertex. There is no schema that restricts which kinds of things can or cannot be associated.
+Those features give graphs a great deal of flexibility for data modeling, as illustrated in Figure 2-5. The figure shows
+a few things that would be difficult to express in a traditional relational schema, such as different kinds of regional 
+structures in different countries (France has départements and régions, whereas the US has counties and states), quirks 
+of history such as a country within a country (ignoring for now the intricacies of sovereign states and nations), and 
+varying granularity of data (Lucy’s current residence is specified as a city, whereas her place of birth is specified 
+only at the level of a state).
 
-Given any vertex, you can efficiently find both its incoming and its outgoing edges, and thus traverse the graph—i.e., follow a path through a chain of vertices—both forward and backward. (That’s why Example 2-2 has indexes on both the tail_vertex and head_vertex columns.)
-
-By using different labels for different kinds of relationships, you can store several different kinds of information in a single graph, while still maintaining a clean data model.
-
-Those features give graphs a great deal of flexibility for data modeling, as illustrated in Figure 2-5. The figure shows a few things that would be difficult to express in a traditional relational schema, such as different kinds of regional structures in different countries (France has départements and régions, whereas the US has counties and states), quirks of history such as a country within a country (ignoring for now the intricacies of sovereign states and nations), and varying granularity of data (Lucy’s current residence is specified as a city, whereas her place of birth is specified only at the level of a state).
-
-You could imagine extending the graph to also include many other facts about Lucy and Alain, or other people. For instance, you could use it to indicate any food allergies they have (by introducing a vertex for each allergen, and an edge between a person and an allergen to indicate an allergy), and link the allergens with a set of vertices that show which foods contain which substances. Then you could write a query to find out what is safe for each person to eat. Graphs are good for evolvability: as you add features to your application, a graph can easily be extended to accommodate changes in your application’s data structures.
+You could imagine extending the graph to also include many other facts about Lucy and Alain, or other people. For 
+instance, you could use it to indicate any food allergies they have (by introducing a vertex for each allergen, and an 
+edge between a person and an allergen to indicate an allergy), and link the allergens with a set of vertices that show 
+which foods contain which substances. Then you could write a query to find out what is safe for each person to eat. 
+Graphs are good for evolvability: as you add features to your application, a graph can easily be extended to accommodate 
+changes in your application’s data structures.
 
 ### The Cypher Query Language
-Cypher is a declarative query language for property graphs, created for the Neo4j graph database [37]. (It is named after a character in the movie The Matrix and is not related to ciphers in cryptography [38].)
+Cypher is a declarative query language for property graphs, created for the Neo4j graph database [37]. 
+(It is named after a character in the movie The Matrix and is not related to ciphers in cryptography [38].)
 
-Example 2-3 shows the Cypher query to insert the lefthand portion of Figure 2-5 into a graph database. The rest of the graph can be added similarly and is omitted for readability. Each vertex is given a symbolic name like USA or Idaho, and other parts of the query can use those names to create edges between the vertices, using an arrow notation: (Idaho) -[:WITHIN]-> (USA) creates an edge labeled WITHIN, with Idaho as the tail node and USA as the head node.
+Example 2-3 shows the Cypher query to insert the lefthand portion of Figure 2-5 into a graph database. The rest of the 
+graph can be added similarly and is omitted for readability. Each vertex is given a symbolic name like USA or Idaho, and 
+other parts of the query can use those names to create edges between the vertices, using an arrow notation: (Idaho) -
+[:WITHIN]-> (USA) creates an edge labeled WITHIN, with Idaho as the tail node and USA as the head node.
 
 Example 2-3. A subset of the data in Figure 2-5, represented as a Cypher query
+```
 CREATE
   (NAmerica:Location {name:'North America', type:'continent'}),
   (USA:Location      {name:'United States', type:'country'  }),
@@ -809,43 +826,70 @@ CREATE
   (Lucy:Person       {name:'Lucy' }),
   (Idaho) -[:WITHIN]->  (USA)  -[:WITHIN]-> (NAmerica),
   (Lucy)  -[:BORN_IN]-> (Idaho)
-When all the vertices and edges of Figure 2-5 are added to the database, we can start asking interesting questions: for example, find the names of all the people who emigrated from the United States to Europe. To be more precise, here we want to find all the vertices that have a BORN_IN edge to a location within the US, and also a LIVING_IN edge to a location within Europe, and return the name property of each of those vertices.
+```
+When all the vertices and edges of Figure 2-5 are added to the database, we can start asking interesting questions: for 
+example, find the names of all the people who emigrated from the United States to Europe. To be more precise, here we 
+want to find all the vertices that have a BORN_IN edge to a location within the US, and also a LIVING_IN edge to a 
+location within Europe, and return the name property of each of those vertices.
 
-Example 2-4 shows how to express that query in Cypher. The same arrow notation is used in a MATCH clause to find patterns in the graph: (person) -[:BORN_IN]-> () matches any two vertices that are related by an edge labeled BORN_IN. The tail vertex of that edge is bound to the variable person, and the head vertex is left unnamed.
+Example 2-4 shows how to express that query in Cypher. The same arrow notation is used in a MATCH clause to find 
+patterns in the graph: (person) -[:BORN_IN]-> () matches any two vertices that are related by an edge labeled BORN_IN. 
+The tail vertex of that edge is bound to the variable person, and the head vertex is left unnamed.
 
 Example 2-4. Cypher query to find people who emigrated from the US to Europe
+```
 MATCH
   (person) -[:BORN_IN]->  () -[:WITHIN*0..]-> (us:Location {name:'United States'}),
   (person) -[:LIVES_IN]-> () -[:WITHIN*0..]-> (eu:Location {name:'Europe'})
 RETURN person.name
+```
 The query can be read as follows:
 
 Find any vertex (call it person) that meets both of the following conditions:
+1. person has an outgoing BORN_IN edge to some vertex. From that vertex, you can follow a chain of outgoing WITHIN edges 
+until eventually you reach a vertex of type Location, whose name property is equal to "United States".
+2. That same person vertex also has an outgoing LIVES_IN edge. Following that edge, and then a chain of outgoing WITHIN 
+edges, you eventually reach a vertex of type Location, whose name property is equal to "Europe".
+3. For each such person vertex, return the name property.
 
-person has an outgoing BORN_IN edge to some vertex. From that vertex, you can follow a chain of outgoing WITHIN edges until eventually you reach a vertex of type Location, whose name property is equal to "United States".
+There are several possible ways of executing the query. The description given here suggests that you start by scanning 
+all the people in the database, examine each person’s birthplace and residence, and return only those people who meet 
+the criteria.
 
-That same person vertex also has an outgoing LIVES_IN edge. Following that edge, and then a chain of outgoing WITHIN edges, you eventually reach a vertex of type Location, whose name property is equal to "Europe".
+But equivalently, you could start with the two Location vertices and work backward. If there is an index on the name 
+property, you can probably efficiently find the two vertices representing the US and Europe. Then you can proceed to 
+find all locations (states, regions, cities, etc.) in the US and Europe respectively by following all incoming WITHIN 
+edges. Finally, you can look for people who can be found through an incoming BORN_IN or LIVES_IN edge at one of the 
+location vertices.
+(Aaron's Notes: Above is important.)
 
-For each such person vertex, return the name property.
-
-There are several possible ways of executing the query. The description given here suggests that you start by scanning all the people in the database, examine each person’s birthplace and residence, and return only those people who meet the criteria.
-
-But equivalently, you could start with the two Location vertices and work backward. If there is an index on the name property, you can probably efficiently find the two vertices representing the US and Europe. Then you can proceed to find all locations (states, regions, cities, etc.) in the US and Europe respectively by following all incoming WITHIN edges. Finally, you can look for people who can be found through an incoming BORN_IN or LIVES_IN edge at one of the location vertices.
-
-As is typical for a declarative query language, you don’t need to specify such execution details when writing the query: the query optimizer automatically chooses the strategy that is predicted to be the most efficient, so you can get on with writing the rest of your application.
+As is typical for a declarative query language, you don’t need to specify such execution details when writing the query: 
+the query optimizer automatically chooses the strategy that is predicted to be the most efficient, so you can get on 
+with writing the rest of your application.
 
 ### Graph Queries in SQL
-Example 2-2 suggested that graph data can be represented in a relational database. But if we put graph data in a relational structure, can we also query it using SQL?
+Example 2-2 suggested that graph data can be represented in a relational database. But if we put graph data in a 
+relational structure, can we also query it using SQL?
 
-The answer is yes, but with some difficulty. In a relational database, you usually know in advance which joins you need in your query. In a graph query, you may need to traverse a variable number of edges before you find the vertex you’re looking for—that is, the number of joins is not fixed in advance.
+The answer is yes, but with some difficulty. In a relational database, you usually know in advance which joins you need 
+in your query. In a graph query, you may need to traverse a variable number of edges before you find the vertex you’re 
+looking for—that is, the number of joins is not fixed in advance.
 
-In our example, that happens in the () -[:WITHIN*0..]-> () rule in the Cypher query. A person’s LIVES_IN edge may point at any kind of location: a street, a city, a district, a region, a state, etc. A city may be WITHIN a region, a region WITHIN a state, a state WITHIN a country, etc. The LIVES_IN edge may point directly at the location vertex you’re looking for, or it may be several levels removed in the location hierarchy.
+In our example, that happens in the () -[:WITHIN*0..]-> () rule in the Cypher query. A person’s LIVES_IN edge may point 
+at any kind of location: a street, a city, a district, a region, a state, etc. A city may be WITHIN a region, a region 
+WITHIN a state, a state WITHIN a country, etc. The LIVES_IN edge may point directly at the location vertex you’re 
+looking for, or it may be several levels removed in the location hierarchy.
 
-In Cypher, :WITHIN*0.. expresses that fact very concisely: it means “follow a WITHIN edge, zero or more times.” It is like the * operator in a regular expression.
+In Cypher, :WITHIN*0.. expresses that fact very concisely: it means “follow a WITHIN edge, zero or more times.” It is 
+like the * operator in a regular expression.
 
-Since SQL:1999, this idea of variable-length traversal paths in a query can be expressed using something called recursive common table expressions (the WITH RECURSIVE syntax). Example 2-5 shows the same query—finding the names of people who emigrated from the US to Europe—expressed in SQL using this technique (supported in PostgreSQL, IBM DB2, Oracle, and SQL Server). However, the syntax is very clumsy in comparison to Cypher.
+Since SQL:1999, this idea of variable-length traversal paths in a query can be expressed using something called 
+recursive common table expressions (the WITH RECURSIVE syntax). Example 2-5 shows the same query—finding the names of 
+people who emigrated from the US to Europe—expressed in SQL using this technique (supported in PostgreSQL, IBM DB2, 
+Oracle, and SQL Server). However, the syntax is very clumsy in comparison to Cypher.
 
 Example 2-5. The same query as Example 2-4, written in SQL using recursive common table expressions
+```
 WITH RECURSIVE
 
   -- in_usa is the set of vertex IDs of all locations within the United States
@@ -885,40 +929,52 @@ FROM vertices
 -- join to find those people who were both born in the US *and* live in Europe
 JOIN born_in_usa     ON vertices.vertex_id = born_in_usa.vertex_id 6
 JOIN lives_in_europe ON vertices.vertex_id = lives_in_europe.vertex_id;
-1
-First find the vertex whose name property has the value "United States", and make it the first element of the set of vertices in_usa.
+```
+1. First find the vertex whose name property has the value "United States", and make it the first element of the set of 
+vertices in_usa.
 
-2
-Follow all incoming within edges from vertices in the set in_usa, and add them to the same set, until all incoming within edges have been visited.
+2. Follow all incoming within edges from vertices in the set in_usa, and add them to the same set, until all incoming 
+within edges have been visited.
 
-3
-Do the same starting with the vertex whose name property has the value "Europe", and build up the set of vertices in_europe.
+3. Do the same starting with the vertex whose name property has the value "Europe", and build up the set of 
+vertices in_europe.
 
-4
-For each of the vertices in the set in_usa, follow incoming born_in edges to find people who were born in some place within the United States.
+4. For each of the vertices in the set in_usa, follow incoming born_in edges to find people who were born in some place 
+within the United States.
 
-5
-Similarly, for each of the vertices in the set in_europe, follow incoming lives_in edges to find people who live in Europe.
+5. Similarly, for each of the vertices in the set in_europe, follow incoming lives_in edges to find people who live in Europe.
 
-6
-Finally, intersect the set of people born in the USA with the set of people living in Europe, by joining them.
+6. Finally, intersect the set of people born in the USA with the set of people living in Europe, by joining them.
 
-If the same query can be written in 4 lines in one query language but requires 29 lines in another, that just shows that different data models are designed to satisfy different use cases. It’s important to pick a data model that is suitable for your application.
+(Aaron's Note: Below is important.)
+If the same query can be written in 4 lines in one query language but requires 29 lines in another, that just shows 
+that different data models are designed to satisfy different use cases. It’s important to pick a data model that is 
+suitable for your application.
 
 ### Triple-Stores and SPARQL
-The triple-store model is mostly equivalent to the property graph model, using different words to describe the same ideas. It is nevertheless worth discussing, because there are various tools and languages for triple-stores that can be valuable additions to your toolbox for building applications.
+The triple-store model is mostly equivalent to the property graph model, using different words to describe the same 
+ideas. It is nevertheless worth discussing, because there are various tools and languages for triple-stores that can be 
+valuable additions to your toolbox for building applications.
 
-In a triple-store, all information is stored in the form of very simple three-part statements: (subject, predicate, object). For example, in the triple (Jim, likes, bananas), Jim is the subject, likes is the predicate (verb), and bananas is the object.
+In a triple-store, all information is stored in the form of very simple three-part statements: (subject, predicate, 
+object). For example, in the triple (Jim, likes, bananas), Jim is the subject, likes is the predicate (verb), and 
+bananas is the object.
 
 The subject of a triple is equivalent to a vertex in a graph. The object is one of two things:
 
-A value in a primitive datatype, such as a string or a number. In that case, the predicate and object of the triple are equivalent to the key and value of a property on the subject vertex. For example, (lucy, age, 33) is like a vertex lucy with properties {"age":33}.
+A value in a primitive datatype, such as a string or a number. In that case, the predicate and object of the triple are 
+equivalent to the key and value of a property on the subject vertex. For example, (lucy, age, 33) is like a vertex lucy 
+with properties {"age":33}.
 
-Another vertex in the graph. In that case, the predicate is an edge in the graph, the subject is the tail vertex, and the object is the head vertex. For example, in (lucy, marriedTo, alain) the subject and object lucy and alain are both vertices, and the predicate marriedTo is the label of the edge that connects them.
+Another vertex in the graph. In that case, the predicate is an edge in the graph, the subject is the tail vertex, and 
+the object is the head vertex. For example, in (lucy, marriedTo, alain) the subject and object lucy and alain are both 
+vertices, and the predicate marriedTo is the label of the edge that connects them.
 
-Example 2-6 shows the same data as in Example 2-3, written as triples in a format called Turtle, a subset of Notation3 (N3) [39].
+Example 2-6 shows the same data as in Example 2-3, written as triples in a format called Turtle, a subset of 
+Notation3 (N3) [39].
 
 Example 2-6. A subset of the data in Figure 2-5, represented as Turtle triples
+```
 @prefix : <urn:example:>.
 _:lucy     a       :Person.
 _:lucy     :name   "Lucy".
@@ -934,29 +990,51 @@ _:usa      :within _:namerica.
 _:namerica a       :Location.
 _:namerica :name   "North America".
 _:namerica :type   "continent".
-In this example, vertices of the graph are written as _:someName. The name doesn’t mean anything outside of this file; it exists only because we otherwise wouldn’t know which triples refer to the same vertex. When the predicate represents an edge, the object is a vertex, as in _:idaho :within _:usa. When the predicate is a property, the object is a string literal, as in _:usa :name "United States".
+```
+In this example, vertices of the graph are written as _:someName. The name doesn’t mean anything outside of this file; 
+it exists only because we otherwise wouldn’t know which triples refer to the same vertex. When the predicate represents 
+an edge, the object is a vertex, as in _:idaho :within _:usa. When the predicate is a property, the object is a string 
+literal, as in _:usa :name "United States".
 
-It’s quite repetitive to repeat the same subject over and over again, but fortunately you can use semicolons to say multiple things about the same subject. This makes the Turtle format quite nice and readable: see Example 2-7.
+It’s quite repetitive to repeat the same subject over and over again, but fortunately you can use semicolons to say 
+multiple things about the same subject. This makes the Turtle format quite nice and readable: see Example 2-7.
 
 Example 2-7. A more concise way of writing the data in Example 2-6
+```
 @prefix : <urn:example:>.
 _:lucy     a :Person;   :name "Lucy";          :bornIn _:idaho.
 _:idaho    a :Location; :name "Idaho";         :type "state";   :within _:usa.
 _:usa      a :Location; :name "United States"; :type "country"; :within _:namerica.
 _:namerica a :Location; :name "North America"; :type "continent".
-THE SEMANTIC WEB
-If you read more about triple-stores, you may get sucked into a maelstrom of articles written about the semantic web. The triple-store data model is completely independent of the semantic web—for example, Datomic [40] is a triple-store that does not claim to have anything to do with it.vii But since the two are so closely linked in many people’s minds, we should discuss them briefly.
+```
 
-The semantic web is fundamentally a simple and reasonable idea: websites already publish information as text and pictures for humans to read, so why don’t they also publish information as machine-readable data for computers to read? The Resource Description Framework (RDF) [41] was intended as a mechanism for different websites to publish data in a consistent format, allowing data from different websites to be automatically combined into a web of data—a kind of internet-wide “database of everything.”
+### THE SEMANTIC WEB
+If you read more about triple-stores, you may get sucked into a maelstrom of articles written about the semantic web. 
+The triple-store data model is completely independent of the semantic web—for example, Datomic [40] is a triple-store 
+that does not claim to have anything to do with it.vii But since the two are so closely linked in many people’s minds, 
+we should discuss them briefly.
 
-Unfortunately, the semantic web was overhyped in the early 2000s but so far hasn’t shown any sign of being realized in practice, which has made many people cynical about it. It has also suffered from a dizzying plethora of acronyms, overly complex standards proposals, and hubris.
+The semantic web is fundamentally a simple and reasonable idea: websites already publish information as text and pictures 
+for humans to read, so why don’t they also publish information as machine-readable data for computers to read? The 
+Resource Description Framework (RDF) [41] was intended as a mechanism for different websites to publish data in a 
+consistent format, allowing data from different websites to be automatically combined into a web of data—a kind of 
+internet-wide “database of everything.”
 
-However, if you look past those failings, there is also a lot of good work that has come out of the semantic web project. Triples can be a good internal data model for applications, even if you have no interest in publishing RDF data on the semantic web.
+Unfortunately, the semantic web was overhyped in the early 2000s but so far hasn’t shown any sign of being realized in 
+practice, which has made many people cynical about it. It has also suffered from a dizzying plethora of acronyms, overly 
+complex standards proposals, and hubris.
 
-THE RDF DATA MODEL
-The Turtle language we used in Example 2-7 is a human-readable format for RDF data. Sometimes RDF is also written in an XML format, which does the same thing much more verbosely—see Example 2-8. Turtle/N3 is preferable as it is much easier on the eyes, and tools like Apache Jena [42] can automatically convert between different RDF formats if necessary.
+However, if you look past those failings, there is also a lot of good work that has come out of the semantic web project. 
+Triples can be a good internal data model for applications, even if you have no interest in publishing RDF data on the 
+semantic web.
+
+### THE RDF DATA MODEL
+The Turtle language we used in Example 2-7 is a human-readable format for RDF data. Sometimes RDF is also written in an 
+XML format, which does the same thing much more verbosely—see Example 2-8. Turtle/N3 is preferable as it is much easier 
+on the eyes, and tools like Apache Jena [42] can automatically convert between different RDF formats if necessary.
 
 Example 2-8. The data of Example 2-7, expressed using RDF/XML syntax
+```
 <rdf:RDF xmlns="urn:example:"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 
@@ -982,16 +1060,29 @@ Example 2-8. The data of Example 2-7, expressed using RDF/XML syntax
     <bornIn rdf:nodeID="idaho"/>
   </Person>
 </rdf:RDF>
-RDF has a few quirks due to the fact that it is designed for internet-wide data exchange. The subject, predicate, and object of a triple are often URIs. For example, a predicate might be an URI such as <http://my-company.com/namespace#within> or <http://my-company.com/namespace#lives_in>, rather than just WITHIN or LIVES_IN. The reasoning behind this design is that you should be able to combine your data with someone else’s data, and if they attach a different meaning to the word within or lives_in, you won’t get a conflict because their predicates are actually <http://other.org/foo#within> and <http://other.org/foo#lives_in>.
+```
+RDF has a few quirks due to the fact that it is designed for internet-wide data exchange. The subject, predicate, and 
+object of a triple are often URIs. For example, a predicate might be an URI such as <http://my-company.com/namespace#within> 
+or <http://my-company.com/namespace#lives_in>, rather than just WITHIN or LIVES_IN. The reasoning behind this design is 
+that you should be able to combine your data with someone else’s data, and if they attach a different meaning to the 
+word within or lives_in, you won’t get a conflict because their predicates are actually <http://other.org/foo#within> 
+and <http://other.org/foo#lives_in>.
 
-The URL <http://my-company.com/namespace> doesn’t necessarily need to resolve to anything—from RDF’s point of view, it is simply a namespace. To avoid potential confusion with http:// URLs, the examples in this section use non-resolvable URIs such as urn:example:within. Fortunately, you can just specify this prefix once at the top of the file, and then forget about it.
+The URL <http://my-company.com/namespace> doesn’t necessarily need to resolve to anything—from RDF’s point of view, it 
+is simply a namespace. To avoid potential confusion with http:// URLs, the examples in this section use non-resolvable 
+URIs such as urn:example:within. Fortunately, you can just specify this prefix once at the top of the file, and then 
+forget about it.
 
-THE SPARQL QUERY LANGUAGE
-SPARQL is a query language for triple-stores using the RDF data model [43]. (It is an acronym for SPARQL Protocol and RDF Query Language, pronounced “sparkle.”) It predates Cypher, and since Cypher’s pattern matching is borrowed from SPARQL, they look quite similar [37].
+### THE SPARQL QUERY LANGUAGE
+SPARQL is a query language for triple-stores using the RDF data model [43]. (It is an acronym for SPARQL Protocol and RDF 
+Query Language, pronounced “sparkle.”) It predates Cypher, and since Cypher’s pattern matching is borrowed from SPARQL, 
+they look quite similar [37].
 
-The same query as before—finding people who have moved from the US to Europe—is even more concise in SPARQL than it is in Cypher (see Example 2-9).
+The same query as before—finding people who have moved from the US to Europe—is even more concise in SPARQL than it is 
+in Cypher (see Example 2-9).
 
 Example 2-9. The same query as Example 2-4, expressed in SPARQL
+```
 PREFIX : <urn:example:>
 
 SELECT ?personName WHERE {
@@ -999,39 +1090,59 @@ SELECT ?personName WHERE {
   ?person :bornIn  / :within* / :name "United States".
   ?person :livesIn / :within* / :name "Europe".
 }
+```
 The structure is very similar. The following two expressions are equivalent (variables start with a question mark in SPARQL):
-
+```
 (person) -[:BORN_IN]-> () -[:WITHIN*0..]-> (location)   # Cypher
-
 ?person :bornIn / :within* ?location.                   # SPARQL
-Because RDF doesn’t distinguish between properties and edges but just uses predicates for both, you can use the same syntax for matching properties. In the following expression, the variable usa is bound to any vertex that has a name property whose value is the string "United States":
-
+```
+Because RDF doesn’t distinguish between properties and edges but just uses predicates for both, you can use the same 
+syntax for matching properties. In the following expression, the variable usa is bound to any vertex that has a name 
+property whose value is the string "United States":
+```
 (usa {name:'United States'})   # Cypher
-
 ?usa :name "United States".    # SPARQL
-SPARQL is a nice query language—even if the semantic web never happens, it can be a powerful tool for applications to use internally.
+```
+SPARQL is a nice query language—even if the semantic web never happens, it can be a powerful tool for applications to 
+use internally.
 
 GRAPH DATABASES COMPARED TO THE NETWORK MODEL
-In “Are Document Databases Repeating History?” we discussed how CODASYL and the relational model competed to solve the problem of many-to-many relationships in IMS. At first glance, CODASYL’s network model looks similar to the graph model. Are graph databases the second coming of CODASYL in disguise?
+In “Are Document Databases Repeating History?” we discussed how CODASYL and the relational model competed to solve the 
+problem of many-to-many relationships in IMS. At first glance, CODASYL’s network model looks similar to the graph model. 
+Are graph databases the second coming of CODASYL in disguise?
 
 No. They differ in several important ways:
 
-In CODASYL, a database had a schema that specified which record type could be nested within which other record type. In a graph database, there is no such restriction: any vertex can have an edge to any other vertex. This gives much greater flexibility for applications to adapt to changing requirements.
+In CODASYL, a database had a schema that specified which record type could be nested within which other record type. In 
+a graph database, there is no such restriction: any vertex can have an edge to any other vertex. This gives much greater 
+flexibility for applications to adapt to changing requirements.
 
-In CODASYL, the only way to reach a particular record was to traverse one of the access paths to it. In a graph database, you can refer directly to any vertex by its unique ID, or you can use an index to find vertices with a particular value.
+In CODASYL, the only way to reach a particular record was to traverse one of the access paths to it. In a graph database, 
+you can refer directly to any vertex by its unique ID, or you can use an index to find vertices with a particular value.
 
-In CODASYL, the children of a record were an ordered set, so the database had to maintain that ordering (which had consequences for the storage layout) and applications that inserted new records into the database had to worry about the positions of the new records in these sets. In a graph database, vertices and edges are not ordered (you can only sort the results when making a query).
+In CODASYL, the children of a record were an ordered set, so the database had to maintain that ordering (which had 
+consequences for the storage layout) and applications that inserted new records into the database had to worry about the 
+positions of the new records in these sets. In a graph database, vertices and edges are not ordered (you can only sort 
+the results when making a query).
 
-In CODASYL, all queries were imperative, difficult to write and easily broken by changes in the schema. In a graph database, you can write your traversal in imperative code if you want to, but most graph databases also support high-level, declarative query languages such as Cypher or SPARQL.
+In CODASYL, all queries were imperative, difficult to write and easily broken by changes in the schema. In a graph 
+database, you can write your traversal in imperative code if you want to, but most graph databases also support high-level, 
+declarative query languages such as Cypher or SPARQL.
 
-The Foundation: Datalog
-Datalog is a much older language than SPARQL or Cypher, having been studied extensively by academics in the 1980s [44, 45, 46]. It is less well known among software engineers, but it is nevertheless important, because it provides the foundation that later query languages build upon.
+### The Foundation: Datalog
+Datalog is a much older language than SPARQL or Cypher, having been studied extensively by academics in the 1980s 
+[44, 45, 46]. It is less well known among software engineers, but it is nevertheless important, because it provides the 
+foundation that later query languages build upon.
 
-In practice, Datalog is used in a few data systems: for example, it is the query language of Datomic [40], and Cascalog [47] is a Datalog implementation for querying large datasets in Hadoop.viii
+In practice, Datalog is used in a few data systems: for example, it is the query language of Datomic [40], and Cascalog 
+[47] is a Datalog implementation for querying large datasets in Hadoop.viii
 
-Datalog’s data model is similar to the triple-store model, generalized a bit. Instead of writing a triple as (subject, predicate, object), we write it as predicate(subject, object). Example 2-10 shows how to write the data from our example in Datalog.
+Datalog’s data model is similar to the triple-store model, generalized a bit. Instead of writing a triple as (subject, 
+predicate, object), we write it as predicate(subject, object). Example 2-10 shows how to write the data from our example 
+in Datalog.
 
 Example 2-10. A subset of the data in Figure 2-5, represented as Datalog facts
+```
 name(namerica, 'North America').
 type(namerica, continent).
 
@@ -1045,9 +1156,13 @@ within(idaho, usa).
 
 name(lucy, 'Lucy').
 born_in(lucy, idaho).
-Now that we have defined the data, we can write the same query as before, as shown in Example 2-11. It looks a bit different from the equivalent in Cypher or SPARQL, but don’t let that put you off. Datalog is a subset of Prolog, which you might have seen before if you’ve studied computer science.
+```
+Now that we have defined the data, we can write the same query as before, as shown in Example 2-11. It looks a bit 
+different from the equivalent in Cypher or SPARQL, but don’t let that put you off. Datalog is a subset of Prolog, which 
+you might have seen before if you’ve studied computer science.
 
 Example 2-11. The same query as Example 2-4, expressed in Datalog
+```
 within_recursive(Location, Name) :- name(Location, Name).     /* Rule 1 */
 
 within_recursive(Location, Name) :- within(Location, Via),    /* Rule 2 */
@@ -1061,49 +1176,88 @@ migrated(Name, BornIn, LivingIn) :- name(Person, Name),       /* Rule 3 */
 
 ?- migrated(Who, 'United States', 'Europe').
 /* Who = 'Lucy'. */
-Cypher and SPARQL jump in right away with SELECT, but Datalog takes a small step at a time. We define rules that tell the database about new predicates: here, we define two new predicates, within_recursive and migrated. These predicates aren’t triples stored in the database, but instead they are derived from data or from other rules. Rules can refer to other rules, just like functions can call other functions or recursively call themselves. Like this, complex queries can be built up a small piece at a time.
+```
+Cypher and SPARQL jump in right away with SELECT, but Datalog takes a small step at a time. We define rules that tell 
+the database about new predicates: here, we define two new predicates, within_recursive and migrated. These predicates 
+aren’t triples stored in the database, but instead they are derived from data or from other rules. Rules can refer to 
+other rules, just like functions can call other functions or recursively call themselves. Like this, complex queries can 
+be built up a small piece at a time.
 
-In rules, words that start with an uppercase letter are variables, and predicates are matched like in Cypher and SPARQL. For example, name(Location, Name) matches the triple name(namerica, 'North America') with variable bindings Location = namerica and Name = 'North America'.
+In rules, words that start with an uppercase letter are variables, and predicates are matched like in Cypher and SPARQL. 
+For example, name(Location, Name) matches the triple name(namerica, 'North America') with variable bindings Location = 
+namerica and Name = 'North America'.
 
-A rule applies if the system can find a match for all predicates on the righthand side of the :- operator. When the rule applies, it’s as though the lefthand side of the :- was added to the database (with variables replaced by the values they matched).
+A rule applies if the system can find a match for all predicates on the righthand side of the :- operator. When the rule 
+applies, it’s as though the lefthand side of the :- was added to the database (with variables replaced by the values 
+they matched).
 
 One possible way of applying the rules is thus:
 
-name(namerica, 'North America') exists in the database, so rule 1 applies. It generates within_recursive(namerica, 'North America').
+name(namerica, 'North America') exists in the database, so rule 1 applies. 
+It generates within_recursive(namerica, 'North America').
 
-within(usa, namerica) exists in the database and the previous step generated within_recursive(namerica, 'North America'), so rule 2 applies. It generates within_recursive(usa, 'North America').
+within(usa, namerica) exists in the database and the previous step generated within_recursive(namerica, 'North America'), 
+so rule 2 applies. It generates within_recursive(usa, 'North America').
 
-within(idaho, usa) exists in the database and the previous step generated within_recursive(usa, 'North America'), so rule 2 applies. It generates within_recursive(idaho, 'North America').
+within(idaho, usa) exists in the database and the previous step generated within_recursive(usa, 'North America'), so 
+rule 2 applies. It generates within_recursive(idaho, 'North America').
 
-By repeated application of rules 1 and 2, the within_recursive predicate can tell us all the locations in North America (or any other location name) contained in our database. This process is illustrated in Figure 2-6.
+By repeated application of rules 1 and 2, the within_recursive predicate can tell us all the locations in North America 
+(or any other location name) contained in our database. This process is illustrated in Figure 2-6.
 
 ddia 0206
 Figure 2-6. Determining that Idaho is in North America, using the Datalog rules from Example 2-11.
-Now rule 3 can find people who were born in some location BornIn and live in some location LivingIn. By querying with BornIn = 'United States' and LivingIn = 'Europe', and leaving the person as a variable Who, we ask the Datalog system to find out which values can appear for the variable Who. So, finally we get the same answer as in the earlier Cypher and SPARQL queries.
+Now rule 3 can find people who were born in some location BornIn and live in some location LivingIn. By querying with 
+BornIn = 'United States' and LivingIn = 'Europe', and leaving the person as a variable Who, we ask the Datalog system to 
+find out which values can appear for the variable Who. So, finally we get the same answer as in the earlier Cypher and 
+SPARQL queries.
 
-The Datalog approach requires a different kind of thinking to the other query languages discussed in this chapter, but it’s a very powerful approach, because rules can be combined and reused in different queries. It’s less convenient for simple one-off queries, but it can cope better if your data is complex.
+The Datalog approach requires a different kind of thinking to the other query languages discussed in this chapter, but 
+it’s a very powerful approach, because rules can be combined and reused in different queries. It’s less convenient for 
+simple one-off queries, but it can cope better if your data is complex.
 
 ## Summary
-Data models are a huge subject, and in this chapter we have taken a quick look at a broad variety of different models. We didn’t have space to go into all the details of each model, but hopefully the overview has been enough to whet your appetite to find out more about the model that best fits your application’s requirements.
+Data models are a huge subject, and in this chapter we have taken a quick look at a broad variety of different models. 
+We didn’t have space to go into all the details of each model, but hopefully the overview has been enough to whet your 
+appetite to find out more about the model that best fits your application’s requirements.
 
-Historically, data started out being represented as one big tree (the hierarchical model), but that wasn’t good for representing many-to-many relationships, so the relational model was invented to solve that problem. More recently, developers found that some applications don’t fit well in the relational model either. New nonrelational “NoSQL” datastores have diverged in two main directions:
+Historically, data started out being represented as one big tree (the hierarchical model), but that wasn’t good for 
+representing many-to-many relationships, so the relational model was invented to solve that problem. More recently, 
+developers found that some applications don’t fit well in the relational model either. New non-relational “NoSQL” 
+datastores have diverged in two main directions:
 
-Document databases target use cases where data comes in self-contained documents and relationships between one document and another are rare.
+1. Document databases target use cases where data comes in self-contained documents and relationships between one document 
+and another are rare.
+2. Graph databases go in the opposite direction, targeting use cases where anything is potentially related to everything.
 
-Graph databases go in the opposite direction, targeting use cases where anything is potentially related to everything.
+All three models (document, relational, and graph) are widely used today, and each is good in its respective domain. One 
+model can be emulated in terms of another model—for example, graph data can be represented in a relational database—but 
+the result is often awkward. That’s why we have different systems for different purposes, not a single one-size-fits-all 
+solution.
 
-All three models (document, relational, and graph) are widely used today, and each is good in its respective domain. One model can be emulated in terms of another model—for example, graph data can be represented in a relational database—but the result is often awkward. That’s why we have different systems for different purposes, not a single one-size-fits-all solution.
+One thing that document and graph databases have in common is that they typically don’t enforce a schema for the data 
+they store, which can make it easier to adapt applications to changing requirements. However, your application most 
+likely still assumes that data has a certain structure; it’s just a question of whether the schema is explicit (enforced 
+on write) or implicit (assumed on read).
 
-One thing that document and graph databases have in common is that they typically don’t enforce a schema for the data they store, which can make it easier to adapt applications to changing requirements. However, your application most likely still assumes that data has a certain structure; it’s just a question of whether the schema is explicit (enforced on write) or implicit (assumed on read).
+Each data model comes with its own query language or framework, and we discussed several examples: SQL, MapReduce, 
+MongoDB’s aggregation pipeline, Cypher, SPARQL, and Datalog. We also touched on CSS and XSL/XPath, which aren’t database 
+query languages but have interesting parallels.
+https://stanford.edu/~rezab/dao/notes/Intro_Spark.pdf
+(Aaron's notes: Above has the bulk storage update with mapReduce and Spark)
 
-Each data model comes with its own query language or framework, and we discussed several examples: SQL, MapReduce, MongoDB’s aggregation pipeline, Cypher, SPARQL, and Datalog. We also touched on CSS and XSL/XPath, which aren’t database query languages but have interesting parallels.
+Although we have covered a lot of ground, there are still many data models left unmentioned. To give just a few brief 
+examples:
+* Researchers working with genome data often need to perform sequence-similarity searches, which means taking one very 
+long string (representing a DNA molecule) and matching it against a large database of strings that are similar, but not 
+identical. None of the databases described here can handle this kind of usage, which is why researchers have written 
+specialized genome database software like GenBank [48].
+* Particle physicists have been doing Big Data–style large-scale data analysis for decades, and projects like the Large 
+Hadron Collider (LHC) now work with hundreds of petabytes! At such a scale custom solutions are required to stop the 
+hardware cost from spiraling out of control [49].
+* Full-text search is arguably a kind of data model that is frequently used alongside databases. Information retrieval 
+is a large specialist subject that we won’t cover in great detail in this book, but we’ll touch on search indexes in 
+Chapter 3 and Part III.
 
-Although we have covered a lot of ground, there are still many data models left unmentioned. To give just a few brief examples:
-
-Researchers working with genome data often need to perform sequence-similarity searches, which means taking one very long string (representing a DNA molecule) and matching it against a large database of strings that are similar, but not identical. None of the databases described here can handle this kind of usage, which is why researchers have written specialized genome database software like GenBank [48].
-
-Particle physicists have been doing Big Data–style large-scale data analysis for decades, and projects like the Large Hadron Collider (LHC) now work with hundreds of petabytes! At such a scale custom solutions are required to stop the hardware cost from spiraling out of control [49].
-
-Full-text search is arguably a kind of data model that is frequently used alongside databases. Information retrieval is a large specialist subject that we won’t cover in great detail in this book, but we’ll touch on search indexes in Chapter 3 and Part III.
-
-We have to leave it there for now. In the next chapter we will discuss some of the trade-offs that come into play when implementing the data models described in this chapter.
+We have to leave it there for now. In the next chapter we will discuss some of the trade-offs that come into play when 
+implementing the data models described in this chapter.
